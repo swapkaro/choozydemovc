@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>choozy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #F7F7F7; }
+  ::selection { background: #BFDBFE; }
+  input, textarea, select { font-family: 'DM Sans', system-ui, sans-serif; }
+  input:focus, textarea:focus, select:focus { border-color: #3B82F6 !important; outline: none; }
+  textarea { resize: vertical; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #E5E5E5; border-radius: 3px; }
+  button { font-family: 'DM Sans', system-ui, sans-serif; cursor: pointer; }
+  a { text-decoration: none; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Card animation */
+  .review-card { transition: transform 0.3s ease, opacity 0.3s ease; }
+  .review-card.anim-pass { transform: translateX(-40px); opacity: 0; }
+  .review-card.anim-shortlist { transform: translateX(40px); opacity: 0; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-body {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 85vh;
+    overflow: auto;
+    padding: 36px 40px;
+  }
+
+  /* Dropdown */
+  .dots-menu {
+    position: absolute; right: 0; top: calc(100% + 8px);
+    background: #fff; border: 1px solid #E5E5E5;
+    border-radius: 10px; min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    z-index: 60; display: none;
+  }
+  .dots-menu.open { display: block; }
+  .dots-menu button {
+    display: block; width: 100%; text-align: left;
+    padding: 11px 16px; font-size: 13px; color: #374151;
+    font-weight: 500; background: none; border: none;
+  }
+  .dots-menu button:hover { background: #F9FAFB; }
+
+  /* Nav tabs */
+  .nav-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 6px;
+    font-size: 13px; font-weight: 500;
+    border: none; background: transparent; color: #9CA3AF;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-tab.active { background: rgba(255,255,255,0.12); color: #fff; }
+  .nav-tab-count {
+    background: rgba(255,255,255,0.1); color: #fff;
+    font-size: 11px; padding: 1px 6px; border-radius: 10px;
+  }
+  .nav-tab.active .nav-tab-count { background: rgba(255,255,255,0.25); }
+
+  /* Sector toggles */
+  .sector-btn {
+    padding: 6px 12px; border-radius: 6px; font-size: 13px;
+    font-weight: 500; border: 1.5px solid #E5E5E5;
+    background: #fff; color: #6B7280; transition: all 0.15s;
+  }
+  .sector-btn.selected {
+    border-color: #3B82F6; background: #EFF6FF; color: #3B82F6;
+  }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 80px 40px; }
+
+  /* Tip bar */
+  .tip-bar {
+    background: #EFF6FF; border: 1px solid #BFDBFE;
+    border-radius: 8px; padding: 10px 16px;
+    margin-bottom: 24px; max-width: 640px; width: 100%;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* Kbd hint */
+  .kbd { background: #F3F4F6; border: 1px solid #E5E5E5; border-radius: 4px; padding: 2px 6px; font-family: monospace; font-weight: 700; font-size: 11px; color: #6B7280; }
+
+  /* Badge / Tag */
+  .badge { background: #F3F4F6; color: #374151; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.02em; }
+  .tag { background: #F3F4F6; color: #6B7280; font-size: 11px; font-weight: 500; padding: 2px 7px; border-radius: 3px; }
+
+  /* Link chip */
+  .link-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #F3F4F6; color: #374151; font-size: 12px;
+    font-weight: 500; padding: 5px 10px; border-radius: 6px;
+  }
+
+  /* Dashboard content area */
+  .tab-content { display: none; }
+  .tab-content.active { display: flex; flex-direction: column; }
+
+  /* Input / textarea base */
+  .field-input {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid #E5E5E5; border-radius: 8px;
+    font-size: 14px; color: #111; font-family: 'DM Sans', system-ui, sans-serif;
+    outline: none;
+  }
+  .field-input:focus { border-color: #3B82F6; }
+
+  .t-field-input {
+    width: 100%; padding: 9px 12px;
+    border: 1.5px solid #E5E5E5; border-radius: 7px;
+    font-size: 13px; color: #111; font-family: 'DM Sans', system-ui, sans-serif;
+    outline: none;
+  }
+  .t-field-input:focus { border-color: #3B82F6; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ LANDING PAGE ═══════════════════════════════ -->
+<div id="page-landing" class="page active">
+  <div style="min-height:100vh; background:#fff;">
+    <!-- Nav -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 40px; border-bottom:1px solid #E5E5E5;">
+      <span style="font-size:17px; font-weight:700; letter-spacing:-0.03em; color:#111;">choozy</span>
+      <button onclick="navigate('dashboard')" style="font-size:13px; color:#6B7280; background:none; border:none;">Sign in</button>
+    </div>
+    <!-- Hero -->
+    <div style="max-width:680px; margin:0 auto; padding:120px 40px 80px; text-align:center;">
+      <div style="display:inline-block; background:#F0F9FF; color:#3B82F6; font-size:12px; font-weight:600; padding:4px 12px; border-radius:20px; margin-bottom:32px; letter-spacing:0.04em;">FOR VENTURE CAPITAL</div>
+      <h1 style="font-size:clamp(36px,6vw,56px); font-weight:800; line-height:1.1; color:#111; letter-spacing:-0.04em; margin:0 0 24px;">Review startup submissions<br>in minutes, not inboxes.</h1>
+      <p style="font-size:18px; color:#6B7280; line-height:1.6; margin:0 0 48px; font-weight:400;">Create a submission page, receive startups, and review them quickly.</p>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button onclick="navigate('create-page')" style="background:#111; color:#fff; border:none; border-radius:8px; padding:14px 28px; font-size:15px; font-weight:600;">Create submission page</button>
+        <button onclick="navigate('dashboard')" style="background:#fff; color:#111; border:1.5px solid #E5E5E5; border-radius:8px; padding:14px 28px; font-size:15px; font-weight:600;">View demo dashboard</button>
+      </div>
+    </div>
+    <!-- Features -->
+    <div style="max-width:900px; margin:0 auto; padding:0 40px 120px; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:24px;">
+      <div style="background:#F7F7F7; border-radius:12px; padding:28px 24px;">
+        <div style="font-size:15px; font-weight:700; color:#111; margin-bottom:8px;">One submission link</div>
+        <div style="font-size:14px; color:#6B7280; line-height:1.6;">Share a single URL. Founders fill out a structured form, not an email.</div>
+      </div>
+      <div style="background:#F7F7F7; border-radius:12px; padding:28px 24px;">
+        <div style="font-size:15px; font-weight:700; color:#111; margin-bottom:8px;">Review, not sort</div>
+        <div style="font-size:14px; color:#6B7280; line-height:1.6;">See one startup at a time. Pass or shortlist. Move through 12 in under 2 minutes.</div>
+      </div>
+      <div style="background:#F7F7F7; border-radius:12px; padding:28px 24px;">
+        <div style="font-size:15px; font-weight:700; color:#111; margin-bottom:8px;">From shortlist to meeting</div>
+        <div style="font-size:14px; color:#6B7280; line-height:1.6;">Move interesting startups forward with one click. Track every decision.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ CREATE PAGE ════════════════════════════════ -->
+<div id="page-create-page" class="page">
+  <div style="min-height:100vh; background:#fff;">
+    <!-- TopBar -->
+    <div style="background:#1A1A1A; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:52px;">
+      <button onclick="navigate('landing')" style="color:#fff; font-size:15px; font-weight:700; letter-spacing:-0.02em; background:none; border:none;">choozy</button>
+    </div>
+
+    <!-- Form state -->
+    <div id="create-form-view" style="max-width:560px; margin:0 auto; padding:60px 40px;">
+      <div style="margin-bottom:40px;">
+        <div style="font-size:11px; font-weight:600; color:#9CA3AF; letter-spacing:0.08em; margin-bottom:8px;">SETUP</div>
+        <h1 style="font-size:28px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0;">Create your submission page</h1>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Fund name</label>
+          <input class="field-input" type="text" value="Parle Ventures" />
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Partner name</label>
+          <input class="field-input" type="text" value="John Snow" />
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Focus sectors</label>
+          <div id="sector-btns" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:8px;">Investment stage</label>
+          <select class="field-input">
+            <option>Pre-seed</option><option>Seed</option><option>Series A</option><option>Series B</option>
+          </select>
+        </div>
+        <button onclick="showCreated()" style="background:#111; color:#fff; border:none; border-radius:8px; padding:14px; font-size:15px; font-weight:600; margin-top:8px;">Create submission page</button>
+      </div>
+    </div>
+
+    <!-- Created state -->
+    <div id="create-created-view" style="display:none; max-width:560px; margin:80px auto; padding:0 40px; width:100%;">
+      <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:12px; padding:28px 32px; margin-bottom:40px;">
+        <div style="font-size:13px; color:#16A34A; font-weight:600; margin-bottom:8px;">✓ Submission page created</div>
+        <div style="font-size:22px; font-weight:700; color:#111; margin-bottom:4px;">Parle Ventures is live</div>
+        <div style="font-size:14px; color:#6B7280;">Share this link with founders</div>
+      </div>
+      <div style="background:#F7F7F7; border-radius:10px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <span style="font-size:14px; color:#374151; font-weight:500;">choozy.io/submit/parle-ventures</span>
+        <button id="copy-link-btn" onclick="copyLink()" style="display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #E5E5E5; border-radius:6px; padding:6px 12px; font-size:13px; font-weight:500; color:#374151;">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copy link
+        </button>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <button onclick="navigate('submit')" style="flex:1; background:#111; color:#fff; border:none; border-radius:8px; padding:13px; font-size:14px; font-weight:600;">Preview submission form</button>
+        <button onclick="navigate('dashboard')" style="flex:1; background:#fff; color:#111; border:1.5px solid #E5E5E5; border-radius:8px; padding:13px; font-size:14px; font-weight:600;">Go to dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SUBMIT PAGE ════════════════════════════════ -->
+<div id="page-submit" class="page">
+  <div style="min-height:100vh; background:#fff;">
+    <!-- Header -->
+    <div style="background:#1A1A1A; padding:16px 40px; display:flex; justify-content:space-between; align-items:center;">
+      <span style="color:#fff; font-size:15px; font-weight:700; letter-spacing:-0.02em;">choozy</span>
+      <button onclick="navigate('dashboard')" style="color:#9CA3AF; font-size:13px; background:none; border:none;">Go to dashboard →</button>
+    </div>
+
+    <!-- Submit form -->
+    <div id="submit-form-view" style="max-width:600px; margin:0 auto; padding:60px 40px;">
+      <div style="margin-bottom:48px;">
+        <div style="font-size:12px; color:#9CA3AF; font-weight:500; margin-bottom:4px;">Submit your startup to</div>
+        <h1 style="font-size:26px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0 0 2px;">John Snow</h1>
+        <div style="font-size:15px; color:#6B7280; font-weight:500;">Parle Ventures</div>
+      </div>
+
+      <!-- Basics -->
+      <div style="margin-bottom:40px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #F3F4F6;">Startup basics</div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Startup name</label><input class="t-field-input" placeholder="e.g. Lexara" /></div>
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Website</label><input class="t-field-input" placeholder="lexara.ai" /></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Sector</label>
+              <select class="t-field-input">
+                <option>Legal AI</option><option>Fintech</option><option>AI SaaS</option><option>Healthcare SaaS</option><option>Developer Tools</option><option>Climate</option><option>Consumer</option><option>Marketplace</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Stage</label>
+              <select class="t-field-input">
+                <option>Pre-seed</option><option>Seed</option><option>Series A</option><option>Series B</option>
+              </select>
+            </div>
+          </div>
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Location</label><input class="t-field-input" placeholder="San Francisco, USA" /></div>
+        </div>
+      </div>
+
+      <!-- What you're building -->
+      <div style="margin-bottom:40px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #F3F4F6;">What you're building</div>
+        <div style="display:flex; flex-direction:column; gap:16px;" id="submit-text-fields"></div>
+      </div>
+
+      <!-- Founders -->
+      <div style="margin-bottom:40px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #F3F4F6;">Founders</div>
+        <div id="founders-container" style="display:flex; flex-direction:column; gap:16px;"></div>
+        <button id="add-founder-btn" onclick="addFounder()" style="font-size:13px; color:#3B82F6; background:none; border:none; font-weight:600; padding:8px 0 0; display:block;">+ Add founder</button>
+      </div>
+
+      <!-- Additional -->
+      <div style="margin-bottom:40px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid #F3F4F6;">Additional</div>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <label style="font-size:12px; font-weight:600; color:#374151; text-transform:uppercase; letter-spacing:0.04em;">Founder background</label>
+              <span id="bg-count" style="font-size:11px; color:#9CA3AF;">0 / 300</span>
+            </div>
+            <textarea class="t-field-input" id="bg-textarea" rows="4" maxlength="300" placeholder="Share your background, relevant experience, and why you're the right team." oninput="updateCount('bg-textarea','bg-count',300)" style="padding:9px 12px; line-height:1.5;"></textarea>
+          </div>
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Pitch deck link</label><input class="t-field-input" placeholder="pitch.com/your-startup" /></div>
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Founder email</label><input class="t-field-input" type="email" placeholder="founder@startup.com" /></div>
+          <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Optional intro video</label><input class="t-field-input" placeholder="loom.com/share/..." /></div>
+        </div>
+      </div>
+
+      <button onclick="submitStartup()" style="width:100%; background:#111; color:#fff; border:none; border-radius:8px; padding:15px; font-size:15px; font-weight:600; margin-top:8px;">Submit startup</button>
+    </div>
+
+    <!-- Submitted state -->
+    <div id="submit-success-view" style="display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; min-height:calc(100vh - 52px);">
+      <div style="width:56px; height:56px; background:#F0FDF4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:24px;">✓</div>
+      <h2 style="font-size:26px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0 0 8px;">Startup submitted successfully.</h2>
+      <p style="font-size:15px; color:#6B7280; margin:0 0 40px;">Your startup has been submitted to Parle Ventures.</p>
+      <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+        <button onclick="resetSubmit()" style="background:#fff; color:#111; border:1.5px solid #E5E5E5; border-radius:8px; padding:12px 24px; font-size:14px; font-weight:600;">Submit another startup</button>
+        <button onclick="navigate('dashboard')" style="background:#111; color:#fff; border:none; border-radius:8px; padding:12px 24px; font-size:14px; font-weight:600;">Go to dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ DASHBOARD ══════════════════════════════════ -->
+<div id="page-dashboard" class="page">
+  <div style="min-height:100vh; background:#F7F7F7;">
+    <!-- Navbar -->
+    <div style="background:#1A1A1A; padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:52px; position:sticky; top:0; z-index:50;">
+      <div style="display:flex; align-items:center; gap:32px;">
+        <button onclick="navigate('landing')" style="color:#fff; font-size:15px; font-weight:700; letter-spacing:-0.02em; background:none; border:none;">Parle Ventures</button>
+        <div style="display:flex; gap:4px;">
+          <button class="nav-tab active" id="nav-review" onclick="switchTab('review')">
+            Review <span class="nav-tab-count" id="count-review">12</span>
+          </button>
+          <button class="nav-tab" id="nav-shortlist" onclick="switchTab('shortlist')">
+            Shortlist <span class="nav-tab-count" id="count-shortlist" style="display:none;">0</span>
+          </button>
+        </div>
+      </div>
+      <div style="position:relative;">
+        <button onclick="toggleDots()" style="color:#9CA3AF; background:none; border:none; padding:8px; border-radius:6px;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <div class="dots-menu" id="dots-menu">
+          <button onclick="switchTab('meetings'); closeDots();">Meetings</button>
+          <button onclick="switchTab('past'); closeDots();">Past</button>
+          <button onclick="navigate('submit'); closeDots();">Preview submission form</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVIEW TAB -->
+    <div id="tab-review" class="tab-content active" style="align-items:center; padding:48px 24px 100px;">
+      <!-- Tip -->
+      <div class="tip-bar" id="tip-bar">
+        <span style="font-size:13px; color:#3B82F6; font-weight:500;">💡 Tip: Quickly shortlist interesting startups. Review them in depth later.</span>
+        <button onclick="hideTip()" style="color:#93C5FD; background:none; border:none; font-size:16px; line-height:1;">×</button>
+      </div>
+
+      <!-- Review card -->
+      <div id="review-card-container" style="max-width:640px; width:100%;"></div>
+
+      <!-- Action buttons -->
+      <div id="review-actions" style="display:flex; gap:12px; margin-top:24px; max-width:640px; width:100%;">
+        <button onclick="doPass()" style="flex:1; background:#fff; color:#EF4444; border:1.5px solid #FCA5A5; border-radius:10px; padding:14px; font-size:15px; font-weight:700;">Pass</button>
+        <button onclick="doShortlist()" style="flex:1; background:#fff; color:#16A34A; border:1.5px solid #86EFAC; border-radius:10px; padding:14px; font-size:15px; font-weight:700;">Shortlist</button>
+      </div>
+    </div>
+
+    <!-- SHORTLIST TAB -->
+    <div id="tab-shortlist" class="tab-content" style="align-items:center; padding:48px 24px 100px;">
+      <div id="shortlist-content" style="max-width:640px; width:100%;"></div>
+    </div>
+
+    <!-- MEETINGS TAB -->
+    <div id="tab-meetings" class="tab-content" style="padding:48px 24px;">
+      <div style="max-width:640px; margin:0 auto;">
+        <div style="margin-bottom:32px;">
+          <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; margin-bottom:4px;">MEETINGS</div>
+          <h2 style="font-size:22px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0;">Interested startups</h2>
+        </div>
+        <div id="meetings-list"></div>
+      </div>
+    </div>
+
+    <!-- PAST TAB -->
+    <div id="tab-past" class="tab-content" style="padding:48px 24px;">
+      <div style="max-width:640px; margin:0 auto;">
+        <div style="margin-bottom:32px;">
+          <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.08em; margin-bottom:4px;">PAST</div>
+          <h2 style="font-size:22px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0;">Decisions made</h2>
+        </div>
+        <div id="past-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ MODAL ══════════════════════════════════════ -->
+<div class="modal-overlay" id="startup-modal" onclick="closeModal(event)">
+  <div class="modal-body" onclick="event.stopPropagation()">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────────────────────────────────────
+const STARTUPS = [
+  { id:1, startup_name:"Lexara", sector:"Legal AI", stage:"Seed", location:"San Francisco, USA", idea:"AI that reviews legal contracts for startups in seconds.", problem:"Early-stage startups can't afford $400/hr lawyers but sign contracts blindly.", insight:"Legal review is the #1 bottleneck before closing deals.", solution:"Upload any contract — NDA, SAFE, SaaS agreement — and get risk flags, plain-english summaries, and suggested edits in under 60 seconds.", traction:"$14k MRR · 45 customers · 3 law firm partnerships", competition:"Ironclad (enterprise), manual review. We're 10x cheaper, 100x faster.", founders:[{name:"Maya Chen",linkedin:"linkedin.com/in/mayachen"},{name:"Ravi Patel",linkedin:"linkedin.com/in/ravipatel"}], founder_background:"Maya was a contracts attorney at Cooley for 5 years. Ravi built ML infra at Stripe. They met at YC's Founder School and have been building for 8 months.", deck_link:"pitch.com/lexara", website:"lexara.ai", email:"maya@lexara.ai" },
+  { id:2, startup_name:"Fluxpay", sector:"Fintech", stage:"Pre-seed", location:"New York, USA", idea:"Embedded B2B payments API for vertical SaaS companies.", problem:"Vertical SaaS companies lose 30% of revenue by sending users to third-party payment platforms.", insight:"Every vertical SaaS will eventually become a fintech — they just don't know how to start.", solution:"A single API that lets any SaaS embed invoicing, ACH transfers, and revenue-based lending into their product in a weekend.", traction:"3 design partners · $8k MRR · processing $200k monthly", competition:"Stripe Treasury (complex), Synctera (bank-first). We're SaaS-first and integrate in days.", founders:[{name:"Jordan Lee",linkedin:"linkedin.com/in/jordanlee"}], founder_background:"Jordan was a founding PM at Mercury where he led the payments product. Left to build Fluxpay after seeing the same gap across 50+ SaaS customers.", deck_link:"fluxpay.io/deck", website:"fluxpay.io", email:"jordan@fluxpay.io" },
+  { id:3, startup_name:"Cadence Health", sector:"Healthcare SaaS", stage:"Seed", location:"Austin, USA", idea:"Async video check-ins that replace routine follow-up appointments.", problem:"60% of specialist appointments are unnecessary follow-ups that waste doctor time and patient money.", insight:"Most patients just need to show a doctor they're okay — not a 45-minute in-person visit.", solution:"Patients record a 90-second video from home. Our AI pre-screens for red flags. Doctors review 12 patients in the time it takes to see 1.", traction:"$22k MRR · 4 clinic partnerships · 1,200 patient check-ins/month", competition:"Teladoc (synchronous video), Doximity. We're async-first and integrated directly into clinic workflows.", founders:[{name:"Dr. Priya Nair",linkedin:"linkedin.com/in/priyanair"},{name:"Sam Okafor",linkedin:"linkedin.com/in/samokafor"}], founder_background:"Priya is a practicing cardiologist at UT Austin who kept seeing patients drive 90 minutes for 5-minute check-ins. Sam was CTO at Hims & Hers.", deck_link:"cadencehealth.com/deck", website:"cadencehealth.com", email:"priya@cadencehealth.com" },
+  { id:4, startup_name:"Devpilot", sector:"Developer Tools", stage:"Pre-seed", location:"London, UK", idea:"Internal docs that write themselves from your codebase.", problem:"Engineering teams spend 6+ hours/week writing and maintaining internal documentation that goes stale the moment it's published.", insight:"Documentation fails because it's disconnected from the code it describes.", solution:"Devpilot hooks into your GitHub, analyzes every PR, and auto-generates living documentation. When code changes, docs update automatically.", traction:"180 beta users · 4.8/5 rating · 3 enterprise pilots", competition:"Notion (manual), Confluence (manual). No one auto-generates from code commits.", founders:[{name:"Tom Walsh",linkedin:"linkedin.com/in/tomwalsh"},{name:"Amara Osei",linkedin:"linkedin.com/in/amaraosei"}], founder_background:"Tom was a Staff Engineer at Shopify for 6 years. Amara led developer experience at Twilio. Both felt this pain acutely in past roles.", deck_link:"devpilot.dev/pitch", website:"devpilot.dev", email:"tom@devpilot.dev" },
+  { id:5, startup_name:"Solarback", sector:"Climate", stage:"Seed", location:"Berlin, Germany", idea:"Peer-to-peer solar energy trading platform for apartment residents.", problem:"40% of Europeans live in apartments and can't install solar — they're locked out of the clean energy economy.", insight:"Apartment buildings collectively have enormous rooftop capacity that's left unused.", solution:"Building owners install shared solar panels. Residents opt in and buy electricity from their own roof at 30% below grid rates. We handle metering, billing, and regulatory compliance.", traction:"12 buildings live · 340 households · €18k MRR", competition:"Traditional utilities. No direct competitor does resident-level P2P solar in apartments.", founders:[{name:"Lukas Becker",linkedin:"linkedin.com/in/lukasbecker"},{name:"Sofia Moreno",linkedin:"linkedin.com/in/sofiamoreno"}], founder_background:"Lukas has a PhD in energy systems from TU Munich. Sofia was head of growth at Enpal, Germany's largest solar installer.", deck_link:"solarback.io/deck", website:"solarback.io", email:"lukas@solarback.io" },
+  { id:6, startup_name:"Fieldwork", sector:"AI SaaS", stage:"Seed", location:"Chicago, USA", idea:"AI that turns field service job notes into structured customer records.", problem:"Plumbers, electricians, and HVAC techs lose $50k/year in repeat service calls because job notes live in a technician's head.", insight:"Field service is a $500B industry that runs on paper and memory.", solution:"Technicians dictate job notes into their phone. Fieldwork transcribes, structures, and syncs to any CRM or scheduling tool automatically.", traction:"$19k MRR · 90 SMB customers · NPS 71", competition:"ServiceTitan (complex, expensive). We're 10x simpler and half the price.", founders:[{name:"Diana Reyes",linkedin:"linkedin.com/in/dianareyes"}], founder_background:"Diana ran operations for a 40-person plumbing company for 7 years before building Fieldwork. She's lived the problem every day.", deck_link:"fieldwork.app/pitch", website:"fieldwork.app", email:"diana@fieldwork.app" },
+  { id:7, startup_name:"Glyph", sector:"AI Tools", stage:"Series A", location:"Toronto, Canada", idea:"Brand voice AI that writes in your company's tone, not a generic one.", problem:"Marketing teams spend 40% of their time editing AI-generated content because it sounds nothing like their brand.", insight:"Every brand has a distinct voice. Generic LLMs are trained to sound like everyone — and end up sounding like no one.", solution:"Glyph ingests your existing content, extracts voice patterns, and fine-tunes a private model. Every output sounds unmistakably like you.", traction:"$180k ARR · 22 customers · 94% retention at 6 months", competition:"Jasper, Copy.ai (generic). We're the only voice-first AI writing tool.", founders:[{name:"Nadia Kowalski",linkedin:"linkedin.com/in/nadiakowalski"},{name:"James Park",linkedin:"linkedin.com/in/jamespark"}], founder_background:"Nadia was VP of Brand at Shopify for 4 years. James was an AI researcher at Cohere. They built Glyph to solve the exact problem Nadia had at Shopify.", deck_link:"glyph.so/deck", website:"glyph.so", email:"nadia@glyph.so" },
+  { id:8, startup_name:"Stackled", sector:"Fintech", stage:"Pre-seed", location:"Miami, USA", idea:"Fractional CFO services powered by AI for sub-$2M ARR startups.", problem:"Early-stage founders make critical financial decisions — pricing, burn, fundraising timing — with no financial expertise.", insight:"A fractional CFO costs $8k/month. Most seed-stage companies can't justify it but desperately need the guidance.", solution:"Stackled connects to your bank, Stripe, and QuickBooks. Our AI generates weekly financial briefings, runway projections, and actionable recommendations. A human CFO reviews and signs off.", traction:"28 customers · $11k MRR · avg. customer saves 8hrs/month", competition:"Pilot (bookkeeping only), Kruze (expensive). We're the first AI-human hybrid fractional CFO.", founders:[{name:"Carlos Rivera",linkedin:"linkedin.com/in/carlosrivera"},{name:"Mei Zhang",linkedin:"linkedin.com/in/meizhang"}], founder_background:"Carlos was CFO at three startups through Series B. Mei built financial modeling tools at Goldman Sachs for 6 years. Both are ex-YC.", deck_link:"stackled.com/deck", website:"stackled.com", email:"carlos@stackled.com" },
+  { id:9, startup_name:"Hiro", sector:"Consumer", stage:"Seed", location:"Los Angeles, USA", idea:"Parental controls that actually teach kids digital safety instead of just blocking.", problem:"90% of parental control apps are blockers that kids bypass in minutes. Parents are flying blind on their child's digital life.", insight:"Blocking doesn't build judgment. Parents want kids who make good choices, not kids who can't access anything.", solution:"Hiro monitors digital activity and uses those moments to start guided conversations between parents and kids. It's a relationship tool, not a surveillance tool.", traction:"4,200 active families · $6 MRR per family · 4.9 App Store rating", competition:"Circle, Bark (monitoring only). We're the only parental tool focused on digital literacy.", founders:[{name:"Aisha Johnson",linkedin:"linkedin.com/in/aishajohnson"}], founder_background:"Aisha is a child psychologist who built Hiro after her own daughter encountered cyberbullying with no tools to address it. 200k TikTok followers in the parenting space.", deck_link:"hiro.family/pitch", website:"hiro.family", email:"aisha@hiro.family" },
+  { id:10, startup_name:"Routecast", sector:"AI SaaS", stage:"Seed", location:"Seattle, USA", idea:"AI dispatch and routing for last-mile delivery companies.", problem:"Small logistics companies use spreadsheets and phone calls for dispatch. They operate at 60% route efficiency compared to FedEx.", insight:"The tools that made Amazon Logistics dominant are inaccessible to companies under 500 trucks.", solution:"Routecast gives 10-truck operations the same AI routing and dispatch intelligence as the big carriers — for $300/month.", traction:"$26k MRR · 14 fleet customers · avg. 22% reduction in fuel costs", competition:"Route4Me (rigid), OptimoRoute (limited AI). We're the first LLM-native dispatch platform.", founders:[{name:"Ben Nakamura",linkedin:"linkedin.com/in/bennakamura"},{name:"Fatima Al-Hassan",linkedin:"linkedin.com/in/fatimahassan"}], founder_background:"Ben spent 8 years at Amazon Logistics as a senior routing engineer. Fatima ran a 30-truck delivery company and felt this gap personally.", deck_link:"routecast.io/deck", website:"routecast.io", email:"ben@routecast.io" },
+  { id:11, startup_name:"Patchwork", sector:"Marketplace", stage:"Pre-seed", location:"Brooklyn, USA", idea:"On-demand marketplace connecting brands with micro-manufacturers for short-run production.", problem:"DTC brands can't place orders under 500 units. Factories won't take them. The minimum order crisis kills small brands.", insight:"There are 40,000 small manufacturers in the US running at 50% capacity who'd love $10k orders.", solution:"Brands post specs. Manufacturers bid. Patchwork matches on capability, timeline, and price. We handle contracts, payments, and QA.", traction:"$45k GMV in 3 months · 18 brands · 30 manufacturers", competition:"Faire (wholesale only), Alibaba (overseas). We're domestic, small-run focused.", founders:[{name:"Oliver Grant",linkedin:"linkedin.com/in/olivergrant"},{name:"Leila Ahmadi",linkedin:"linkedin.com/in/leilaahmadi"}], founder_background:"Oliver ran a furniture brand for 4 years and lived the minimum order problem. Leila was GM at Etsy's wholesale division.", deck_link:"patchwork.supply/deck", website:"patchwork.supply", email:"oliver@patchwork.supply" },
+  { id:12, startup_name:"Zenro", sector:"Healthcare SaaS", stage:"Series A", location:"Boston, USA", idea:"Mental health platform specifically built for founders and executives.", problem:"60% of founders experience burnout. Generic therapy apps don't understand the unique psychological pressures of building a company.", insight:"Founders need therapists who've seen a cap table, know what a down round feels like, and understand co-founder conflict.", solution:"Zenro is a curated network of therapists trained in entrepreneurial psychology, paired with async journaling tools and peer support groups for founders.", traction:"$90k ARR · 310 active members · 3 VC firms pay for all portfolio founders", competition:"BetterHelp (generic), Cerebral (clinical). No one is founder-specific.", founders:[{name:"Dr. Kenji Watanabe",linkedin:"linkedin.com/in/kenjiwatanabe"},{name:"Erin O'Brien",linkedin:"linkedin.com/in/erinobrien"}], founder_background:"Kenji is a psychiatrist who worked with 200+ founders in SF before building Zenro. Erin is a former founder who raised $12M and sold her company in 2022.", deck_link:"zenro.co/pitch", website:"zenro.co", email:"kenji@zenro.co" },
+  { id:13, startup_name:"Airscope", sector:"Climate", stage:"Seed", location:"Denver, USA", idea:"IoT air quality monitoring network for commercial real estate.", problem:"Building managers have no visibility into indoor air quality. Post-COVID, tenants are leaving buildings with poor air — and landlords don't know why.", insight:"Air quality is the new amenity. Buildings that can prove clean air retain tenants 40% longer.", solution:"Airscope installs a 6-sensor mesh in any building in 2 hours. Property managers get real-time dashboards. Tenants get a QR code showing live air quality in their workspace.", traction:"$31k MRR · 22 buildings · 1 REIT pilot with 80 properties", competition:"Awair (consumer), uHoo (outdated). We're the first platform purpose-built for commercial real estate.", founders:[{name:"Marco Delgado",linkedin:"linkedin.com/in/marcodelgado"},{name:"Zoe Chen",linkedin:"linkedin.com/in/zoechen"}], founder_background:"Marco has a PhD in environmental engineering. Zoe was head of product at WeWork and watched air quality complaints tank tenant satisfaction scores.", deck_link:"airscope.io/deck", website:"airscope.io", email:"marco@airscope.io" },
+  { id:14, startup_name:"Prism Analytics", sector:"AI SaaS", stage:"Seed", location:"Austin, USA", idea:"Natural language analytics for non-technical business teams.", problem:"Business teams wait days for data teams to answer simple questions. Data teams spend 70% of time on ad-hoc requests.", insight:"The bottleneck isn't data access — it's translation between business language and SQL.", solution:"Connect your data warehouse, ask questions in plain English, get charts and insights instantly. No SQL, no waiting.", traction:"$38k MRR · 35 customers · avg. 3-hour reduction in weekly wait time for data", competition:"Looker (technical), Tableau (technical), ThoughtSpot (enterprise-expensive). We're the first truly non-technical analytics tool.", founders:[{name:"Ana Ferreira",linkedin:"linkedin.com/in/anaferreira"},{name:"David Kim",linkedin:"linkedin.com/in/davidkim"}], founder_background:"Ana was a data engineer at Databricks. David was VP of Operations at a $50M SaaS company who lived the pain of waiting on data teams.", deck_link:"prismanalytics.io/deck", website:"prismanalytics.io", email:"ana@prismanalytics.io" },
+  { id:15, startup_name:"Vesper", sector:"Consumer", stage:"Pre-seed", location:"Paris, France", idea:"AI-powered personal sommelier that learns your taste and recommends wine.", problem:"Wine buying is intimidating and random. People spend $25+ on bottles they don't enjoy because they can't navigate wine lists or store shelves.", insight:"Taste is learnable and predictable — yet no product has ever built a real preference model for wine.", solution:"Scan any bottle or wine list. Vesper tells you whether you'll like it based on your taste profile. The more you drink, the smarter it gets.", traction:"12,000 downloads · 3,200 MAU · 4.8 App Store · partnership with 3 French wine regions", competition:"Vivino (community ratings), Wine-Searcher (prices). We're the only personalized taste prediction app.", founders:[{name:"Claire Dupont",linkedin:"linkedin.com/in/clairedupont"}], founder_background:"Claire is a trained sommelier with 10 years in Michelin-starred restaurants. Built Vesper after watching 100 customers a week make random wine choices.", deck_link:"vesper.wine/deck", website:"vesper.wine", email:"claire@vesper.wine" },
+];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let state = {
+  reviewQueue: STARTUPS.slice(0, 12).map(s => s.id),
+  shortlist: [],
+  meetings: [],
+  past: [],
+  reviewIndex: 0,
+  shortlistIndex: 0,
+  currentTab: 'review',
+  founderCount: 1,
+};
+
+function getStartup(id) { return STARTUPS.find(s => s.id === id); }
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'create-page') initCreatePage();
+  if (page === 'submit') initSubmitPage();
+  if (page === 'dashboard') renderDashboard();
+  window.scrollTo(0, 0);
+}
+
+// ─── CREATE PAGE ──────────────────────────────────────────────────────────────
+const SECTORS = ["AI","SaaS","Fintech","Healthcare","Developer Tools","Climate","Consumer","Marketplace","Other"];
+const selectedSectors = new Set(["AI","SaaS","Fintech"]);
+
+function initCreatePage() {
+  const container = document.getElementById('sector-btns');
+  container.innerHTML = '';
+  SECTORS.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'sector-btn' + (selectedSectors.has(s) ? ' selected' : '');
+    btn.textContent = s;
+    btn.onclick = () => {
+      if (selectedSectors.has(s)) { selectedSectors.delete(s); btn.classList.remove('selected'); }
+      else { selectedSectors.add(s); btn.classList.add('selected'); }
+    };
+    container.appendChild(btn);
+  });
+  document.getElementById('create-form-view').style.display = '';
+  document.getElementById('create-created-view').style.display = 'none';
+}
+
+function showCreated() {
+  document.getElementById('create-form-view').style.display = 'none';
+  document.getElementById('create-created-view').style.display = '';
+}
+
+function copyLink() {
+  const btn = document.getElementById('copy-link-btn');
+  btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied!';
+  btn.style.color = '#16A34A';
+  setTimeout(() => {
+    btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy link';
+    btn.style.color = '#374151';
+  }, 2000);
+}
+
+// ─── SUBMIT PAGE ──────────────────────────────────────────────────────────────
+const SUBMIT_FIELDS = [
+  { key:"idea", label:"What are you building?", max:140, example:"AI tool that reviews legal contracts for startups." },
+  { key:"problem", label:"Problem", max:200, example:"Startups can't afford $400/hr lawyers but sign contracts blindly." },
+  { key:"insight", label:"Insight", max:140, example:"Early contract review is a bottleneck for startups." },
+  { key:"solution", label:"Solution", max:200, example:"Upload any contract, get risk flags and plain-english summaries in 60 seconds." },
+  { key:"traction", label:"Traction", max:120, example:"$12k MRR | 30 customers" },
+  { key:"competition", label:"Competition", max:120, example:"Ironclad (enterprise), manual review. 10x cheaper." },
+];
+
+function initSubmitPage() {
+  document.getElementById('submit-form-view').style.display = '';
+  document.getElementById('submit-success-view').style.display = 'none';
+  state.founderCount = 1;
+
+  const container = document.getElementById('submit-text-fields');
+  container.innerHTML = '';
+  SUBMIT_FIELDS.forEach(f => {
+    const div = document.createElement('div');
+    const countId = 'count-' + f.key;
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+        <label style="font-size:12px; font-weight:600; color:#374151; text-transform:uppercase; letter-spacing:0.04em;">${f.label}</label>
+        <span id="${countId}" style="font-size:11px; color:#9CA3AF;">0 / ${f.max}</span>
+      </div>
+      <textarea class="t-field-input" id="ta-${f.key}" maxlength="${f.max}" placeholder="${f.example}" rows="3"
+        oninput="updateCount('ta-${f.key}','${countId}',${f.max})"
+        style="padding:9px 12px; line-height:1.5;"></textarea>`;
+    container.appendChild(div);
+  });
+
+  renderFounders();
+}
+
+function renderFounders() {
+  const container = document.getElementById('founders-container');
+  container.innerHTML = '';
+  for (let i = 0; i < state.founderCount; i++) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:grid; grid-template-columns:1fr 1fr; gap:12px;';
+    div.innerHTML = `
+      <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">Founder name</label><input class="t-field-input" placeholder="Maya Chen" /></div>
+      <div><label style="display:block; font-size:12px; font-weight:600; color:#374151; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">LinkedIn</label><input class="t-field-input" placeholder="linkedin.com/in/maya" /></div>`;
+    container.appendChild(div);
+  }
+  document.getElementById('add-founder-btn').style.display = state.founderCount < 3 ? '' : 'none';
+}
+
+function addFounder() { state.founderCount++; renderFounders(); }
+
+function updateCount(taId, countId, max) {
+  const len = document.getElementById(taId).value.length;
+  const el = document.getElementById(countId);
+  el.textContent = len + ' / ' + max;
+  el.style.color = len > max * 0.9 ? '#EF4444' : '#9CA3AF';
+}
+
+function submitStartup() {
+  document.getElementById('submit-form-view').style.display = 'none';
+  document.getElementById('submit-success-view').style.display = 'flex';
+}
+
+function resetSubmit() {
+  document.getElementById('submit-success-view').style.display = 'none';
+  initSubmitPage();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  updateNavCounts();
+  renderReviewTab();
+  renderShortlistTab();
+  renderMeetingsTab();
+  renderPastTab();
+}
+
+function updateNavCounts() {
+  const rCount = document.getElementById('count-review');
+  const sCount = document.getElementById('count-shortlist');
+  rCount.textContent = state.reviewQueue.length;
+  rCount.style.display = state.reviewQueue.length > 0 ? '' : 'none';
+  sCount.textContent = state.shortlist.length;
+  sCount.style.display = state.shortlist.length > 0 ? '' : 'none';
+}
+
+function switchTab(tab) {
+  state.currentTab = tab;
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  const navBtn = document.getElementById('nav-' + tab);
+  if (navBtn) navBtn.classList.add('active');
+  closeDots();
+  if (tab === 'review') renderReviewTab();
+  if (tab === 'shortlist') renderShortlistTab();
+  if (tab === 'meetings') renderMeetingsTab();
+  if (tab === 'past') renderPastTab();
+}
+
+function hideTip() { document.getElementById('tip-bar').style.display = 'none'; }
+
+// ─── REVIEW TAB ───────────────────────────────────────────────────────────────
+function renderReviewTab() {
+  const container = document.getElementById('review-card-container');
+  const actions = document.getElementById('review-actions');
+  const currentId = state.reviewQueue[state.reviewIndex];
+  const s = currentId ? getStartup(currentId) : null;
+
+  if (!s) {
+    actions.style.display = 'none';
+    container.innerHTML = `
+      <div style="background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:60px 44px; text-align:center;">
+        <div style="font-size:32px; margin-bottom:16px;">✓</div>
+        <h3 style="font-size:20px; font-weight:700; color:#111; margin:0 0 8px;">Queue cleared</h3>
+        <p style="font-size:14px; color:#9CA3AF; margin:0 0 24px;">You've reviewed all ${12 - state.reviewQueue.length} startups.</p>
+        ${state.shortlist.length > 0 ? `<button onclick="switchTab('shortlist')" style="background:#111; color:#fff; border:none; border-radius:8px; padding:12px 24px; font-size:14px; font-weight:600;">Review shortlist (${state.shortlist.length})</button>` : ''}
+      </div>`;
+    return;
+  }
+
+  actions.style.display = 'flex';
+  container.innerHTML = `
+    <div class="review-card" id="review-card" style="background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:40px 44px; box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+      <div style="margin-bottom:28px;">
+        <h2 style="font-size:24px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0 0 10px;">${s.startup_name}</h2>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="badge">${s.sector}</span>
+          <span class="badge">${s.stage}</span>
+          <span class="badge">${s.location}</span>
+        </div>
+      </div>
+      <div style="margin-bottom:22px;">
+        <p style="font-size:16px; color:#374151; line-height:1.6; margin:0;">${s.idea}</p>
+      </div>
+      <div style="border-top:1px solid #F3F4F6; padding-top:16px; margin-top:16px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:6px;">INSIGHT</div>
+        <div style="font-size:14px; color:#374151; line-height:1.6;">${s.insight}</div>
+      </div>
+      <div style="border-top:1px solid #F3F4F6; padding-top:16px; margin-top:16px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:6px;">TRACTION</div>
+        <div style="font-size:14px; color:#374151; line-height:1.6;">${s.traction}</div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:16px; margin-top:32px; padding-top:24px; border-top:1px solid #F3F4F6;">
+        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#9CA3AF;"><span class="kbd">P</span> Pass</div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#9CA3AF;"><span class="kbd">S</span> Shortlist</div>
+      </div>
+    </div>`;
+  updateNavCounts();
+}
+
+function animateDecision(direction, callback) {
+  const card = document.getElementById('review-card');
+  if (!card) { callback(); return; }
+  card.classList.add('anim-' + direction);
+  setTimeout(() => { card.classList.remove('anim-' + direction); callback(); }, 350);
+}
+
+function doPass() {
+  const currentId = state.reviewQueue[state.reviewIndex];
+  if (!currentId) return;
+  animateDecision('pass', () => {
+    state.past.push({ id: currentId, status: 'Passed', date: new Date() });
+    state.reviewQueue = state.reviewQueue.filter(id => id !== currentId);
+    renderReviewTab();
+    renderPastTab();
+    updateNavCounts();
+  });
+}
+
+function doShortlist() {
+  const currentId = state.reviewQueue[state.reviewIndex];
+  if (!currentId) return;
+  animateDecision('shortlist', () => {
+    state.shortlist.push(currentId);
+    state.reviewQueue = state.reviewQueue.filter(id => id !== currentId);
+    renderReviewTab();
+    renderShortlistTab();
+    updateNavCounts();
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (state.currentTab !== 'review') return;
+  if (e.key === 'p' || e.key === 'P') doPass();
+  if (e.key === 's' || e.key === 'S') doShortlist();
+});
+
+// ─── SHORTLIST TAB ────────────────────────────────────────────────────────────
+function renderShortlistTab() {
+  const container = document.getElementById('shortlist-content');
+  if (state.shortlist.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">No startups shortlisted yet</div>
+        <div style="font-size:13px; color:#9CA3AF; margin-bottom:24px; line-height:1.6;">Go to Review and shortlist startups you'd like to revisit.</div>
+        <button onclick="switchTab('review')" style="background:#111; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600;">Start reviewing</button>
+      </div>`;
+    return;
+  }
+
+  const idx = Math.min(state.shortlistIndex, state.shortlist.length - 1);
+  state.shortlistIndex = idx;
+  const currentId = state.shortlist[idx];
+  const s = getStartup(currentId);
+
+  let foundersHTML = s.founders.map(f => `
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <div style="width:26px; height:26px; background:#F3F4F6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#6B7280;">${f.name[0]}</div>
+      <span style="font-size:13px; font-weight:500; color:#374151;">${f.name}</span>
+      <span style="font-size:12px; color:#9CA3AF;">${f.linkedin}</span>
+    </div>`).join('');
+
+  let linksHTML = '';
+  if (s.deck_link) linksHTML += `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Pitch deck</span>`;
+  s.founders.forEach(f => { linksHTML += `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>${f.name} LinkedIn</span>`; });
+  linksHTML += `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>${s.website}</span>`;
+
+  let navHTML = '';
+  if (state.shortlist.length > 1) {
+    navHTML = `
+      <div style="display:flex; gap:8px; margin-top:12px; justify-content:center;">
+        <button onclick="prevShortlist()" ${idx === 0 ? 'disabled' : ''} style="padding:8px 16px; border-radius:6px; border:1px solid #E5E5E5; background:#fff; font-size:12px; font-weight:500; color:${idx === 0 ? '#D1D5DB' : '#374151'}; cursor:${idx === 0 ? 'not-allowed' : 'pointer'};">← Prev</button>
+        <button onclick="nextShortlist()" ${idx === state.shortlist.length - 1 ? 'disabled' : ''} style="padding:8px 16px; border-radius:6px; border:1px solid #E5E5E5; background:#fff; font-size:12px; font-weight:500; color:${idx === state.shortlist.length - 1 ? '#D1D5DB' : '#374151'}; cursor:${idx === state.shortlist.length - 1 ? 'not-allowed' : 'pointer'};">Next →</button>
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div style="background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:40px 44px; box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+      <div style="margin-bottom:28px;">
+        <h2 style="font-size:24px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0 0 10px;">${s.startup_name}</h2>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="badge">${s.sector}</span><span class="badge">${s.stage}</span><span class="badge">${s.location}</span>
+        </div>
+      </div>
+      <p style="font-size:15px; color:#374151; line-height:1.65; margin:0 0 24px;">${s.idea}</p>
+      ${detailRow('Problem', s.problem)}
+      ${detailRow('Insight', s.insight)}
+      ${detailRow('Solution', s.solution)}
+      ${detailRow('Traction', s.traction)}
+      ${detailRow('Competition', s.competition)}
+      <div style="margin-bottom:20px;">
+        <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:10px;">FOUNDERS</div>
+        ${foundersHTML}
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; padding-top:16px; border-top:1px solid #F3F4F6;">${linksHTML}</div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:20px;">
+      <button onclick="shortlistPass()" style="flex:1; background:#fff; color:#EF4444; border:1.5px solid #FCA5A5; border-radius:10px; padding:13px; font-size:14px; font-weight:700;">Pass</button>
+      <button onclick="shortlistKeep()" style="flex:1; background:#fff; color:#6B7280; border:1.5px solid #E5E5E5; border-radius:10px; padding:13px; font-size:14px; font-weight:600;">Keep us posted</button>
+      <button onclick="shortlistInterested()" style="flex:1; background:#16A34A; color:#fff; border:none; border-radius:10px; padding:13px; font-size:14px; font-weight:700;">Interested</button>
+    </div>
+    ${navHTML}`;
+}
+
+function detailRow(label, value) {
+  return `<div style="margin-bottom:18px;"><div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:5px;">${label.toUpperCase()}</div><div style="font-size:14px; color:#374151; line-height:1.6;">${value}</div></div>`;
+}
+
+function removeFromShortlist(status, addToMeeting) {
+  const idx = Math.min(state.shortlistIndex, state.shortlist.length - 1);
+  const currentId = state.shortlist[idx];
+  if (!currentId) return;
+  state.past.push({ id: currentId, status, date: new Date() });
+  if (addToMeeting) state.meetings.push(currentId);
+  state.shortlist = state.shortlist.filter(id => id !== currentId);
+  state.shortlistIndex = Math.max(0, state.shortlistIndex - 1);
+  renderShortlistTab();
+  renderPastTab();
+  renderMeetingsTab();
+  updateNavCounts();
+}
+
+function shortlistPass() { removeFromShortlist('Passed', false); }
+function shortlistKeep() { removeFromShortlist('Keep us posted', false); }
+function shortlistInterested() { removeFromShortlist('Call scheduled', true); }
+function prevShortlist() { state.shortlistIndex = Math.max(0, state.shortlistIndex - 1); renderShortlistTab(); }
+function nextShortlist() { state.shortlistIndex = Math.min(state.shortlist.length - 1, state.shortlistIndex + 1); renderShortlistTab(); }
+
+// ─── MEETINGS TAB ─────────────────────────────────────────────────────────────
+function renderMeetingsTab() {
+  const container = document.getElementById('meetings-list');
+  if (state.meetings.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">No meetings yet</div>
+        <div style="font-size:13px; color:#9CA3AF; margin-bottom:24px; line-height:1.6;">Mark startups as Interested from your shortlist to track them here.</div>
+        <button onclick="switchTab('shortlist')" style="background:#111; color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600;">Go to Shortlist</button>
+      </div>`;
+    return;
+  }
+  container.innerHTML = '<div style="display:flex; flex-direction:column; gap:2px;">' +
+    state.meetings.map(id => {
+      const s = getStartup(id);
+      return `
+        <div style="background:#fff; border:1px solid #E5E5E5; border-radius:10px; padding:18px 22px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <div>
+            <button onclick="openModal(${id})" style="font-size:15px; font-weight:700; color:#111; background:none; border:none; padding:0; text-align:left;">${s.startup_name}</button>
+            <div style="font-size:12px; color:#9CA3AF; margin-top:2px;">${s.founders[0]?.name} · ${s.email}</div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="mailto:${s.email}" style="display:flex; align-items:center; gap:5px; background:#F3F4F6; color:#374151; font-size:12px; font-weight:500; padding:6px 12px; border-radius:6px;">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Send email
+            </a>
+            <button onclick="scheduleCall(${id})" style="display:flex; align-items:center; gap:5px; background:#111; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:12px; font-weight:600;">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 8.82a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92v2z"/></svg>Mark call scheduled
+            </button>
+          </div>
+        </div>`;
+    }).join('') + '</div>';
+}
+
+function scheduleCall(id) {
+  state.meetings = state.meetings.filter(mid => mid !== id);
+  state.past.push({ id, status: 'Call scheduled', date: new Date() });
+  renderMeetingsTab();
+  renderPastTab();
+}
+
+// ─── PAST TAB ─────────────────────────────────────────────────────────────────
+function renderPastTab() {
+  const container = document.getElementById('past-list');
+  if (state.past.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:13px; font-weight:700; color:#111; margin-bottom:6px;">No past decisions</div>
+        <div style="font-size:13px; color:#9CA3AF; line-height:1.6;">Startups you've passed on, kept in touch with, or scheduled calls with will appear here.</div>
+      </div>`;
+    return;
+  }
+  const statusColor = { 'Passed': '#EF4444', 'Call scheduled': '#3B82F6', 'Keep us posted': '#6B7280' };
+  container.innerHTML = '<div style="display:flex; flex-direction:column; gap:2px;">' +
+    state.past.map((item, i) => {
+      const s = getStartup(item.id);
+      const d = item.date;
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const color = statusColor[item.status] || '#6B7280';
+      return `
+        <div style="background:#fff; border:1px solid #E5E5E5; border-radius:10px; padding:16px 22px; display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <button onclick="openModal(${item.id})" style="font-size:14px; font-weight:700; color:#111; background:none; border:none; padding:0;">${s.startup_name}</button>
+            <div style="font-size:12px; color:#9CA3AF; margin-top:2px;">
+              <span style="color:${color}; font-weight:600;">${item.status}</span> · ${dateStr} · ${timeStr}
+            </div>
+          </div>
+        </div>`;
+    }).join('') + '</div>';
+}
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const s = getStartup(id);
+  if (!s) return;
+  let foundersHTML = s.founders.map(f => `
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+      <div style="width:28px; height:28px; background:#F3F4F6; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#6B7280;">${f.name[0]}</div>
+      <div>
+        <div style="font-size:13px; font-weight:600; color:#111;">${f.name}</div>
+        <div style="font-size:12px; color:#9CA3AF;">${f.linkedin}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('modal-content').innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
+      <div>
+        <h2 style="font-size:22px; font-weight:800; color:#111; letter-spacing:-0.03em; margin:0 0 6px;">${s.startup_name}</h2>
+        <div style="display:flex; gap:6px;"><span class="tag">${s.sector}</span><span class="tag">${s.stage}</span><span class="tag">${s.location}</span></div>
+      </div>
+      <button onclick="closeModal()" style="background:#F3F4F6; border:none; border-radius:6px; padding:8px; color:#6B7280;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    ${modalSection('What they\'re building', s.idea)}
+    ${modalSection('Problem', s.problem)}
+    ${modalSection('Insight', s.insight)}
+    ${modalSection('Solution', s.solution)}
+    ${modalSection('Traction', s.traction)}
+    ${modalSection('Competition', s.competition)}
+    ${modalSection('Founder background', s.founder_background)}
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:8px;">FOUNDERS</div>
+      ${foundersHTML}
+    </div>
+    <div style="display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;">
+      ${s.deck_link ? `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Pitch deck</span>` : ''}
+      ${s.website ? `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>${s.website}</span>` : ''}
+      ${s.email ? `<span class="link-chip"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>${s.email}</span>` : ''}
+    </div>`;
+  document.getElementById('startup-modal').classList.add('open');
+}
+
+function modalSection(label, value) {
+  return `<div style="margin-bottom:20px;"><div style="font-size:11px; font-weight:700; color:#9CA3AF; letter-spacing:0.06em; margin-bottom:6px;">${label.toUpperCase()}</div><div style="font-size:14px; color:#374151; line-height:1.6;">${value}</div></div>`;
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('startup-modal')) {
+    document.getElementById('startup-modal').classList.remove('open');
+  }
+}
+
+// ─── DOTS MENU ────────────────────────────────────────────────────────────────
+function toggleDots() { document.getElementById('dots-menu').classList.toggle('open'); }
+function closeDots() { document.getElementById('dots-menu').classList.remove('open'); }
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('dots-menu');
+  if (menu && !menu.contains(e.target) && !e.target.closest('[onclick="toggleDots()"]')) {
+    closeDots();
+  }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+initCreatePage();
+initSubmitPage();
+</script>
+</body>
+</html>
