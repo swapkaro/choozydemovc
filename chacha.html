@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chacha — Create Ads by Just Talking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --saffron: #FF6B1A;
+    --saffron-light: #FFF0E8;
+    --saffron-dark: #CC4A00;
+    --green: #1B7F3E;
+    --green-light: #E8F5EE;
+    --navy: #1A2340;
+    --card-bg: #ffffff;
+    --text-primary: #111;
+    --text-secondary: #666;
+    --border: rgba(0,0,0,0.1);
+    --bg-secondary: #f7f6f3;
+    --radius: 20px;
+    --font-main: 'Baloo 2', sans-serif;
+    --font-body: 'Nunito', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --card-bg: #1e1e1e;
+      --text-primary: #f0f0f0;
+      --text-secondary: #aaa;
+      --border: rgba(255,255,255,0.12);
+      --bg-secondary: #2a2a2a;
+    }
+  }
+
+  html, body {
+    background: #f4f2ee;
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    max-width: 440px;
+    width: 100%;
+    padding: 0 0 80px;
+    min-height: 100vh;
+    background: #f4f2ee;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .landing-hero {
+    background: linear-gradient(160deg, #FF6B1A 0%, #FF9A4A 60%, #FFB347 100%);
+    border-radius: 0 0 40px 40px;
+    padding: 48px 28px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .landing-hero::before {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    top: -60px; right: -40px;
+  }
+  .landing-hero::after {
+    content: '';
+    position: absolute;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+    bottom: 10px; left: -30px;
+  }
+
+  .chacha-logo {
+    font-family: var(--font-main);
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.5px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: white;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+
+  .hero-tagline {
+    font-family: var(--font-main);
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+
+  .hero-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.55;
+    margin-bottom: 32px;
+    font-weight: 500;
+  }
+
+  .lang-chips {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .lang-chip {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1.5px solid rgba(255,255,255,0.4);
+  }
+
+  .cta-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: white;
+    color: var(--saffron-dark);
+    font-family: var(--font-main);
+    font-size: 20px;
+    font-weight: 700;
+    padding: 18px 36px;
+    border-radius: 100px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .cta-btn:active { transform: scale(0.97); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+
+  .mic-icon-btn {
+    width: 40px; height: 40px;
+    background: var(--saffron);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .features {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .feature-card {
+    background: var(--card-bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .feat-icon { font-size: 28px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+  .feat-title { font-family: var(--font-main); font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .feat-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  .trust-bar {
+    margin: 0 24px 8px;
+    background: var(--green-light);
+    border-radius: 16px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .trust-bar p { font-size: 13px; color: var(--green); font-weight: 600; }
+
+  .screen-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 20px 16px;
+  }
+
+  .back-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 0.5px solid var(--border);
+    background: var(--card-bg);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    color: var(--text-secondary);
+  }
+
+  .screen-title { font-family: var(--font-main); font-size: 20px; font-weight: 700; color: var(--text-primary); }
+
+  .mic-area { display: flex; flex-direction: column; align-items: center; padding: 20px 24px 32px; }
+
+  .mic-instruction {
+    font-size: 15px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 32px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .big-mic-btn {
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--saffron);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+    transition: transform 0.15s;
+    box-shadow: 0 0 0 0 rgba(255,107,26,0.4);
+    position: relative;
+  }
+
+  .big-mic-btn.recording {
+    animation: pulse-ring 1.2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(255,107,26,0.5); }
+    70% { box-shadow: 0 0 0 28px rgba(255,107,26,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,107,26,0); }
+  }
+
+  .big-mic-btn:active { transform: scale(0.95); }
+  .mic-svg { width: 56px; height: 56px; }
+
+  .mic-label { font-family: var(--font-main); font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-bottom: 24px; }
+
+  .recording-label {
+    font-size: 15px; font-weight: 600; color: var(--saffron);
+    display: flex; align-items: center; gap: 8px; margin-bottom: 32px;
+  }
+
+  .rec-dot {
+    width: 10px; height: 10px;
+    background: #E24B4A; border-radius: 50%;
+    animation: blink 1s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+  .sample-phrases { width: 100%; }
+
+  .phrases-label {
+    font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px; text-align: center;
+  }
+
+  .phrase-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+  .phrase-chip {
+    background: var(--saffron-light); color: var(--saffron-dark);
+    font-size: 13px; font-weight: 600; padding: 8px 14px;
+    border-radius: 100px; border: none; cursor: pointer;
+    font-family: var(--font-body); transition: background 0.15s;
+  }
+
+  .phrase-chip:active { background: #FFD8C0; }
+
+  .transcript-box {
+    margin: 0 20px 20px;
+    background: var(--card-bg);
+    border: 1.5px solid var(--saffron);
+    border-radius: 18px; padding: 18px;
+  }
+
+  .transcript-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--saffron); margin-bottom: 8px; }
+  .transcript-text { font-family: var(--font-main); font-size: 17px; font-weight: 600; color: var(--text-primary); line-height: 1.5; }
+
+  .generate-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--saffron); color: white;
+    font-family: var(--font-main); font-size: 18px; font-weight: 700;
+    padding: 16px 32px; border-radius: 100px; border: none; cursor: pointer;
+    width: calc(100% - 40px); margin: 0 20px;
+    transition: transform 0.15s;
+    box-shadow: 0 6px 20px rgba(255,107,26,0.3);
+  }
+  .generate-btn:active { transform: scale(0.97); }
+
+  .loading-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 60px 24px; min-height: 400px;
+  }
+
+  .loading-anim { display: flex; gap: 10px; margin-bottom: 28px; }
+
+  .load-dot { width: 14px; height: 14px; background: var(--saffron); border-radius: 50%; }
+  .load-dot:nth-child(1) { animation: bounce 1.2s 0s infinite; }
+  .load-dot:nth-child(2) { animation: bounce 1.2s 0.2s infinite; }
+  .load-dot:nth-child(3) { animation: bounce 1.2s 0.4s infinite; }
+
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-16px); opacity: 1; }
+  }
+
+  .loading-title { font-family: var(--font-main); font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; text-align: center; }
+  .loading-sub { font-size: 14px; color: var(--text-secondary); text-align: center; }
+
+  .results-section { padding: 0 20px 24px; }
+  .section-label { font-family: var(--font-main); font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px; }
+  .ad-cards { display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px; }
+
+  .ad-card {
+    background: var(--card-bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+
+  .ad-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px;
+  }
+
+  .ad-card-type {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-main); font-size: 15px; font-weight: 700; color: var(--text-primary);
+  }
+
+  .type-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 100px; letter-spacing: 0.04em;
+  }
+
+  .badge-poster { background: #FFF0E8; color: var(--saffron-dark); }
+  .badge-insta { background: #F3E8FF; color: #7C3AED; }
+  .badge-reel { background: #E8F5EE; color: var(--green); }
+
+  .ad-img-wrap { position: relative; margin: 0 16px 14px; border-radius: 14px; overflow: hidden; }
+
+  .ad-img-placeholder {
+    width: 100%; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--font-main); position: relative;
+  }
+
+  .ad-img-placeholder.poster-style {
+    background: linear-gradient(145deg, #FF6B1A 0%, #FF9A4A 100%);
+    aspect-ratio: 3/4;
+  }
+  .ad-img-placeholder.insta-style {
+    background: linear-gradient(145deg, #833AB4, #FD1D1D, #FCAF45);
+    aspect-ratio: 1;
+  }
+  .ad-img-placeholder.reel-style {
+    background: linear-gradient(145deg, #1A2340 0%, #2D3F6E 100%);
+    aspect-ratio: 9/16; max-height: 280px;
+  }
+
+  .ad-overlay-text {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+
+  .ad-shop-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.8); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+  .ad-main-text { font-family: var(--font-main); font-size: 28px; font-weight: 800; color: white; text-align: center; line-height: 1.15; margin-bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .ad-sub-text { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9); text-align: center; margin-bottom: 14px; }
+  .ad-cta-pill { background: white; padding: 8px 22px; border-radius: 100px; font-family: var(--font-main); font-size: 14px; font-weight: 700; }
+
+  .ad-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
+
+  .ad-action-btn {
+    flex: 1; padding: 9px; border-radius: 10px;
+    border: 0.5px solid var(--border);
+    background: var(--bg-secondary);
+    font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    cursor: pointer; font-family: var(--font-body);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  .refine-section {
+    margin: 0 20px 24px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius); padding: 20px;
+    border: 0.5px solid var(--border);
+  }
+
+  .refine-title { font-family: var(--font-main); font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .refine-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
+  .refine-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+  .refine-chip {
+    background: var(--card-bg); border: 0.5px solid var(--border);
+    color: var(--text-secondary); font-size: 13px; font-weight: 600;
+    padding: 8px 14px; border-radius: 100px; cursor: pointer; font-family: var(--font-body);
+  }
+
+  .refine-mic-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--navy); color: white;
+    font-family: var(--font-main); font-size: 16px; font-weight: 700;
+    padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+    width: 100%; transition: opacity 0.15s;
+  }
+  .refine-mic-btn:active { opacity: 0.85; }
+
+  .step-bar { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px 4px; }
+  .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background 0.3s, width 0.3s; }
+  .step-dot.active { background: var(--saffron); width: 22px; border-radius: 4px; }
+
+  .play-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
+  .play-circle { width: 52px; height: 52px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- SCREEN: LANDING -->
+  <div id="screen-landing" class="screen active">
+    <div class="landing-hero">
+      <div class="chacha-logo">
+        <div class="logo-icon">🎙</div>
+        Chacha
+      </div>
+      <h1 class="hero-tagline">Create Ads for Your Shop by Just Talking</h1>
+      <p class="hero-sub">Tell Chacha your idea and it creates posters, Instagram posts & video reels — in minutes.</p>
+      <div class="lang-chips">
+        <span class="lang-chip">🇮🇳 Hindi</span>
+        <span class="lang-chip">Hinglish</span>
+        <span class="lang-chip">English</span>
+      </div>
+      <button class="cta-btn" onclick="goToRecord()">
+        <div class="mic-icon-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 11a7 7 0 0 0 14 0" stroke="white" stroke-width="2.2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="white" stroke-width="2.2" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </div>
+        Speak to Chacha
+      </button>
+    </div>
+
+    <div class="features">
+      <div class="feature-card">
+        <div class="feat-icon">🎙️</div>
+        <div>
+          <div class="feat-title">Just Speak — No Typing Needed</div>
+          <div class="feat-desc">Bol do apna idea Hindi ya English mein. Chacha samjhega.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">🎨</div>
+        <div>
+          <div class="feat-title">Poster + Reel in 30 Seconds</div>
+          <div class="feat-desc">Get a ready poster, Instagram post, and video reel instantly.</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feat-icon">✏️</div>
+        <div>
+          <div class="feat-title">Change Anything by Voice</div>
+          <div class="feat-desc">"Price 199 kar do" ya "background red karo" — bolo aur ho jayega.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="trust-bar">
+      <span style="font-size:22px">✅</span>
+      <p>Used by 2,000+ restaurant & shop owners across India</p>
+    </div>
+  </div>
+
+  <!-- SCREEN: RECORD -->
+  <div id="screen-record" class="screen">
+    <div class="step-bar">
+      <div class="step-dot active" id="dot1"></div>
+      <div class="step-dot" id="dot2"></div>
+      <div class="step-dot" id="dot3"></div>
+    </div>
+    <div class="screen-header">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <span class="screen-title">Tell Chacha Your Idea</span>
+    </div>
+    <div class="mic-area">
+      <p class="mic-instruction">Press the mic and speak your ad idea in Hindi, Hinglish, or English</p>
+      <button class="big-mic-btn" id="micBtn" onclick="toggleRecording()">
+        <svg class="mic-svg" viewBox="0 0 56 56" fill="none">
+          <rect x="20" y="6" width="16" height="28" rx="8" fill="white"/>
+          <path d="M12 28c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="28" y1="44" x2="28" y2="52" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+          <line x1="20" y1="52" x2="36" y2="52" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div id="micLabelArea">
+        <p class="mic-label">Tap to Speak</p>
+      </div>
+      <div class="sample-phrases">
+        <p class="phrases-label">Try saying</p>
+        <div class="phrase-chips">
+          <button class="phrase-chip" onclick="selectPhrase(this, 'Weekend pizza offer poster bana do. Buy 1 Get 1 Free.')">🍕 Pizza Offer</button>
+          <button class="phrase-chip" onclick="selectPhrase(this, 'Sunday special biryani 30% discount. Ghar pe delivery bhi hai.')">🍛 Biryani Deal</button>
+          <button class="phrase-chip" onclick="selectPhrase(this, 'Happy Diwali offer. Sab items pe 20% off. 5 November tak.')">🪔 Diwali Sale</button>
+          <button class="phrase-chip" onclick="selectPhrase(this, 'New menu launch kar raha hoon. South Indian breakfast sabse saste daam mein.')">🥞 New Menu</button>
+        </div>
+      </div>
+    </div>
+    <div id="transcriptArea" style="display:none">
+      <div class="transcript-box">
+        <div class="transcript-label">🎙 Aapne kaha</div>
+        <div class="transcript-text" id="transcriptText"></div>
+      </div>
+      <button class="generate-btn" onclick="startGenerate()">
+        ✨ Create My Ad
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN: LOADING -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-screen">
+      <div style="font-size:64px;margin-bottom:20px">🎙</div>
+      <div class="loading-anim">
+        <div class="load-dot"></div>
+        <div class="load-dot"></div>
+        <div class="load-dot"></div>
+      </div>
+      <p class="loading-title">Chacha is creating your ad...</p>
+      <p class="loading-sub" id="loadingStep">Understanding your idea...</p>
+    </div>
+  </div>
+
+  <!-- SCREEN: RESULTS -->
+  <div id="screen-results" class="screen">
+    <div class="step-bar">
+      <div class="step-dot" style="background:var(--saffron)"></div>
+      <div class="step-dot" style="background:var(--saffron)"></div>
+      <div class="step-dot active"></div>
+    </div>
+    <div class="screen-header">
+      <button class="back-btn" onclick="goBack()">←</button>
+      <span class="screen-title">Your Ads Are Ready!</span>
+    </div>
+
+    <div class="results-section">
+      <p class="section-label">🎉 3 Ads Generated</p>
+      <div class="ad-cards" id="adCards">
+
+        <div class="ad-card">
+          <div class="ad-card-header">
+            <div class="ad-card-type">🖼 Poster <span class="type-badge badge-poster">A4 Size</span></div>
+          </div>
+          <div class="ad-img-wrap">
+            <div class="ad-img-placeholder poster-style">
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,0.08)"></div>
+              <div class="ad-overlay-text">
+                <div class="ad-shop-name" id="r-shop-poster">🍕 Roma's Kitchen</div>
+                <div class="ad-main-text" id="r-main-poster">Weekend Special!</div>
+                <div class="ad-sub-text" id="r-sub-poster">Buy 1 Get 1 Free</div>
+                <div class="ad-cta-pill" id="r-cta-poster" style="color:var(--saffron-dark)">Order Now</div>
+              </div>
+            </div>
+          </div>
+          <div class="ad-actions">
+            <button class="ad-action-btn">⬇ Download</button>
+            <button class="ad-action-btn">📤 Share</button>
+            <button class="ad-action-btn">✏ Edit</button>
+          </div>
+        </div>
+
+        <div class="ad-card">
+          <div class="ad-card-header">
+            <div class="ad-card-type">📸 Instagram Post <span class="type-badge badge-insta">1:1</span></div>
+          </div>
+          <div class="ad-img-wrap">
+            <div class="ad-img-placeholder insta-style">
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,0.2)"></div>
+              <div class="ad-overlay-text">
+                <div style="font-size:40px;margin-bottom:8px">🍕</div>
+                <div class="ad-main-text" id="r-main-insta">Weekend Offer</div>
+                <div class="ad-sub-text" id="r-sub-insta">Buy 1 Pizza Get 1 FREE</div>
+                <div class="ad-cta-pill" id="r-cta-insta" style="color:#833AB4">Swipe to Order →</div>
+              </div>
+            </div>
+          </div>
+          <div class="ad-actions">
+            <button class="ad-action-btn">⬇ Download</button>
+            <button class="ad-action-btn">📤 Share</button>
+            <button class="ad-action-btn">✏ Edit</button>
+          </div>
+        </div>
+
+        <div class="ad-card">
+          <div class="ad-card-header">
+            <div class="ad-card-type">🎬 Video Reel <span class="type-badge badge-reel">9:16</span></div>
+          </div>
+          <div class="ad-img-wrap">
+            <div class="ad-img-placeholder reel-style">
+              <div class="ad-overlay-text">
+                <div style="font-size:36px;margin-bottom:10px">🎬</div>
+                <div class="ad-main-text" style="font-size:22px" id="r-main-reel">BOGO Pizza Deal</div>
+                <div class="ad-sub-text" style="font-size:13px" id="r-sub-reel">This Weekend Only!</div>
+                <div class="ad-cta-pill" id="r-cta-reel" style="color:#1A2340;font-size:13px">Call Now to Order</div>
+              </div>
+              <div class="play-overlay">
+                <div class="play-circle">
+                  <svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="#1A2340"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ad-actions">
+            <button class="ad-action-btn">⬇ Download</button>
+            <button class="ad-action-btn">📤 Share</button>
+            <button class="ad-action-btn">✏ Edit</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="refine-section">
+      <div class="refine-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor" opacity="0.9"/><path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Kuch Change Karna Hai?
+      </div>
+      <p class="refine-sub">Tell Chacha what to update and it will regenerate all ads instantly</p>
+      <div class="refine-chips">
+        <button class="refine-chip" onclick="refineAd(this)">Price 199 kar do</button>
+        <button class="refine-chip" onclick="refineAd(this)">Background red karo</button>
+        <button class="refine-chip" onclick="refineAd(this)">Add Zomato logo</button>
+        <button class="refine-chip" onclick="refineAd(this)">Offer Sunday tak badhao</button>
+        <button class="refine-chip" onclick="refineAd(this)">Bolder font chahiye</button>
+      </div>
+      <button class="refine-mic-btn" onclick="refineByVoice()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="9" y="2" width="6" height="12" rx="3" fill="white"/><path d="M5 11a7 7 0 0 0 14 0" stroke="white" stroke-width="2.2" stroke-linecap="round"/><line x1="12" y1="18" x2="12" y2="22" stroke="white" stroke-width="2.2" stroke-linecap="round"/><line x1="8" y1="22" x2="16" y2="22" stroke="white" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Tell Chacha What to Change
+      </button>
+    </div>
+
+    <div style="padding: 0 20px 16px; text-align: center;">
+      <button onclick="goToRecord()" style="border:none;background:none;color:var(--text-secondary);font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font-body);">
+        ← Start Over with New Idea
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let isRecording = false;
+  let recordTimeout = null;
+  let selectedPhrase = '';
+
+  const adVariants = [
+    { poster_main:"Weekend Special!", poster_sub:"Buy 1 Get 1 Free", poster_cta:"Order Now", insta_main:"Weekend Offer", insta_sub:"Buy 1 Pizza Get 1 FREE", insta_cta:"Swipe to Order →", reel_main:"BOGO Pizza Deal", reel_sub:"This Weekend Only!", reel_cta:"Call Now to Order" },
+    { poster_main:"Sunday Biryani!", poster_sub:"30% Off Today", poster_cta:"Order Karo", insta_main:"Biryani Offer", insta_sub:"Special Sunday Discount 🍛", insta_cta:"Tap to Order →", reel_main:"Biryani at 30% Off", reel_sub:"Sunday Only!", reel_cta:"Order Now" },
+    { poster_main:"Happy Diwali! 🪔", poster_sub:"20% Off Everything", poster_cta:"Visit Us Today", insta_main:"Diwali Sale", insta_sub:"20% Off — 5 Nov Tak", insta_cta:"Shop Now →", reel_main:"Diwali Dhamaka", reel_sub:"Limited Time Offer", reel_cta:"Come Visit Us" }
+  ];
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function goToRecord() {
+    isRecording = false; selectedPhrase = '';
+    document.getElementById('transcriptArea').style.display = 'none';
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micLabelArea').innerHTML = '<p class="mic-label">Tap to Speak</p>';
+    showScreen('record');
+  }
+
+  function goBack() {
+    const active = document.querySelector('.screen.active').id;
+    if (active === 'screen-record') showScreen('landing');
+    else if (active === 'screen-results') showScreen('record');
+  }
+
+  function toggleRecording() {
+    if (isRecording) stopRecording(); else startRecording();
+  }
+
+  function startRecording() {
+    isRecording = true;
+    document.getElementById('micBtn').classList.add('recording');
+    document.getElementById('micLabelArea').innerHTML = '<div class="recording-label"><div class="rec-dot"></div> Recording... Tap to stop</div>';
+    document.getElementById('transcriptArea').style.display = 'none';
+    recordTimeout = setTimeout(() => { if (isRecording) stopRecording(); }, 4000);
+  }
+
+  function stopRecording() {
+    isRecording = false;
+    clearTimeout(recordTimeout);
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micLabelArea').innerHTML = '<p class="mic-label">Tap to Speak</p>';
+    const phrase = selectedPhrase || "Weekend pizza offer poster bana do. Buy 1 Get 1 Free.";
+    showTranscript(phrase);
+  }
+
+  function selectPhrase(btn, phrase) {
+    selectedPhrase = phrase;
+    document.querySelectorAll('.phrase-chip').forEach(c => c.style.background = '');
+    btn.style.background = '#FFD8C0';
+    showTranscript(phrase);
+  }
+
+  function showTranscript(text) {
+    document.getElementById('transcriptText').textContent = text;
+    document.getElementById('transcriptArea').style.display = 'block';
+  }
+
+  function startGenerate() {
+    showScreen('loading');
+    const steps = ["Understanding your idea...","Designing your poster...","Creating Instagram post...","Generating video reel...","Finishing touches..."];
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < steps.length) { document.getElementById('loadingStep').textContent = steps[i]; i++; }
+      else {
+        clearInterval(interval);
+        const t = document.getElementById('transcriptText').textContent;
+        let data = adVariants[0];
+        if (t.toLowerCase().includes('biryani')) data = adVariants[1];
+        else if (t.toLowerCase().includes('diwali')) data = adVariants[2];
+        updateAdCards(data);
+        showScreen('results');
+      }
+    }, 600);
+  }
+
+  function updateAdCards(data) {
+    const map = [['r-main-poster',data.poster_main],['r-sub-poster',data.poster_sub],['r-cta-poster',data.poster_cta],['r-main-insta',data.insta_main],['r-sub-insta',data.insta_sub],['r-cta-insta',data.insta_cta],['r-main-reel',data.reel_main],['r-sub-reel',data.reel_sub],['r-cta-reel',data.reel_cta]];
+    map.forEach(([id,val]) => { const el = document.getElementById(id); if (el) el.textContent = val; });
+  }
+
+  function refineAd(btn) { showRefineLoading(btn.textContent); }
+  function refineByVoice() { showRefineLoading("Applying your changes..."); }
+
+  function showRefineLoading(hint) {
+    const section = document.querySelector('.refine-section');
+    const orig = section.innerHTML;
+    section.innerHTML = `<div style="text-align:center;padding:20px 0"><div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px"><div class="load-dot"></div><div class="load-dot"></div><div class="load-dot"></div></div><p style="font-family:var(--font-main);font-size:16px;font-weight:700;color:var(--text-primary)">Updating your ads...</p><p style="font-size:13px;color:var(--text-secondary);margin-top:4px">"${hint}"</p></div>`;
+    setTimeout(() => {
+      updateAdCards(adVariants[Math.floor(Math.random() * adVariants.length)]);
+      section.innerHTML = orig;
+      section.querySelectorAll('.refine-chip').forEach(c => { c.onclick = function() { refineAd(this); }; });
+      section.querySelector('.refine-mic-btn').onclick = refineByVoice;
+    }, 1800);
+  }
+</script>
+</body>
+</html>
