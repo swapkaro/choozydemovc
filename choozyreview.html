@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Choozy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #F5F4F0;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: #1A1A1A;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: #1A1A1A; color: #F5F4F0; }
+
+  .serif { font-family: 'DM Serif Display', serif; }
+
+  #grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 100; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  }
+
+  button { cursor: pointer; border: none; background: none; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+  input, textarea { font-family: inherit; }
+
+  .card-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
+  .card-shadow-lg { box-shadow: 0 4px 16px rgba(0,0,0,0.06), 0 16px 48px rgba(0,0,0,0.09); }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .screen.active {
+    display: flex;
+    opacity: 1;
+  }
+  .screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ── ENTRY ── */
+  #screen-entry { text-align: center; }
+  #entry-inner { max-width: 480px; width: 100%; }
+
+  .logo { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 3.5rem; display: block; }
+
+  .entry-headline {
+    font-size: clamp(1.9rem, 5vw, 2.75rem);
+    line-height: 1.15;
+    font-weight: 400;
+    margin-bottom: 1rem;
+  }
+  .entry-headline em { color: #888; font-style: italic; }
+
+  .entry-sub { color: #999; font-size: 1rem; margin-bottom: 3rem; line-height: 1.6; }
+
+  .btn-primary {
+    width: 100%; max-width: 320px; padding: 1rem 2rem;
+    background: #1A1A1A; color: #F5F4F0;
+    border-radius: 0.75rem; font-size: 1rem; font-weight: 500;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+    transition: transform 0.12s ease, box-shadow 0.15s ease;
+    display: block; margin: 0 auto;
+  }
+  .btn-primary:hover { transform: scale(1.015); box-shadow: 0 6px 24px rgba(0,0,0,0.17); }
+  .btn-primary:active { transform: scale(0.985); }
+
+  .btn-ghost {
+    color: #999; font-size: 0.9rem; padding: 0.5rem 1rem;
+    transition: opacity 0.15s;
+    display: block; margin: 0.75rem auto 0;
+  }
+  .btn-ghost:hover { opacity: 0.6; }
+
+  .kbd-hints { margin-top: 4rem; display: flex; justify-content: center; gap: 1.5rem; }
+  .kbd-hint { display: flex; align-items: center; gap: 0.4rem; }
+  .kbd {
+    display: inline-block; padding: 0.2rem 0.5rem;
+    background: white; border: 1px solid #E8E8E8; border-radius: 0.3rem;
+    font-size: 0.75rem; color: #666; box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+  .kbd-label { font-size: 0.72rem; color: #BBB; }
+
+  /* ── REVIEW ── */
+  #screen-review { justify-content: flex-start; padding-top: 2rem; }
+  #review-inner { max-width: 480px; width: 100%; }
+
+  .review-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.75rem;
+  }
+  .review-counter { font-size: 0.85rem; font-weight: 500; color: #BBB; }
+  .review-logo { font-size: 0.85rem; font-weight: 500; }
+  .review-score { display: flex; gap: 0.75rem; }
+  .score-approve { font-size: 0.8rem; color: #22C55E; font-weight: 600; }
+  .score-reject  { font-size: 0.8rem; color: #EF4444; font-weight: 600; }
+
+  .progress-bar-track {
+    width: 100%; height: 2px; background: #EBEBEB; border-radius: 4px;
+    margin-bottom: 2rem; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: #1A1A1A; border-radius: 4px;
+    width: 0%; transition: width 0.3s ease;
+  }
+
+  /* Card stack area */
+  .card-area { position: relative; min-height: 390px; margin-bottom: 2rem; }
+
+  .card-stack-ghost {
+    position: absolute; left: 50%; border-radius: 1.25rem; background: white;
+    transform: translateX(-50%); pointer-events: none;
+    transition: opacity 0.2s;
+  }
+
+  /* Main draggable card */
+  .creative-card {
+    position: relative; z-index: 2;
+    background: white; border-radius: 1.25rem; overflow: hidden;
+    user-select: none; touch-action: pan-y;
+    cursor: grab;
+    transition: box-shadow 0.2s;
+  }
+  .creative-card:active { cursor: grabbing; }
+
+  .card-img-area {
+    height: 210px; display: flex; align-items: center; justify-content: center;
+    position: relative; transition: height 0.3s ease;
+  }
+  .card-emoji { font-size: 3.8rem; display: inline-block; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .card-type-badge {
+    position: absolute; top: 14px; left: 14px;
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
+    border-radius: 999px; padding: 0.25rem 0.75rem;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .card-expand-hint {
+    position: absolute; bottom: 14px; right: 14px;
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(4px);
+    border-radius: 999px; padding: 0.2rem 0.6rem;
+    font-size: 0.65rem; color: #888;
+    transition: opacity 0.2s;
+  }
+
+  .card-body { padding: 1.5rem; }
+  .card-title { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; line-height: 1.3; }
+  .card-desc {
+    font-size: 0.875rem; color: #888; line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    transition: all 0.2s;
+  }
+  .card-desc.expanded { display: block; -webkit-line-clamp: unset; overflow: visible; }
+
+  .card-extra {
+    margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid #F0F0F0;
+    display: none;
+  }
+  .card-extra.visible { display: block; }
+  .card-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .card-tag {
+    background: #F5F4F0; border-radius: 0.4rem; padding: 0.25rem 0.6rem;
+    font-size: 0.75rem; color: #666;
+  }
+  .card-hint { font-size: 0.72rem; color: #BBB; margin-top: 0.75rem; }
+
+  /* Swipe stamps */
+  .stamp {
+    position: absolute; top: 20px; z-index: 10;
+    border-radius: 0.5rem; padding: 0.3rem 0.7rem;
+    font-weight: 700; font-size: 0.95rem; letter-spacing: 0.06em;
+    opacity: 0; pointer-events: none; transition: opacity 0.06s;
+    border: 2.5px solid;
+  }
+  .stamp-approve { right: 20px; color: #22C55E; border-color: #22C55E; transform: rotate(12deg); }
+  .stamp-reject  { left: 20px;  color: #EF4444; border-color: #EF4444; transform: rotate(-12deg); }
+
+  /* Action buttons */
+  .action-row { display: flex; gap: 1rem; justify-content: center; }
+  .btn-reject, .btn-approve {
+    flex: 1; max-width: 180px; padding: 0.9rem;
+    background: white; border-radius: 0.875rem;
+    font-size: 0.875rem; font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
+    transition: transform 0.12s ease, background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .btn-reject  { border: 1.5px solid #FEE2E2; color: #EF4444; }
+  .btn-approve { border: 1.5px solid #BBF7D0; color: #22C55E; }
+  .btn-reject:hover  { background: #FEF2F2; transform: scale(1.03); }
+  .btn-approve:hover { background: #F0FDF4; transform: scale(1.03); }
+  .btn-reject:active, .btn-approve:active { transform: scale(0.95); }
+
+  .review-kbd-hint { text-align: center; margin-top: 1.25rem; font-size: 0.72rem; color: #CCC; }
+
+  /* Milestone toast */
+  #milestone-toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(60px);
+    background: #1A1A1A; color: white; padding: 0.75rem 1.5rem;
+    border-radius: 999px; font-size: 0.85rem; font-weight: 500;
+    white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none; z-index: 200;
+  }
+  #milestone-toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+
+  /* Card fly animations */
+  @keyframes flyRight {
+    to { transform: translateX(130%) rotate(15deg); opacity: 0; }
+  }
+  @keyframes flyLeft {
+    to { transform: translateX(-130%) rotate(-15deg); opacity: 0; }
+  }
+  @keyframes cardIn {
+    from { transform: scale(0.93); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .fly-right { animation: flyRight 0.28s cubic-bezier(0.32,0,0.5,1) forwards; }
+  .fly-left  { animation: flyLeft  0.28s cubic-bezier(0.32,0,0.5,1) forwards; }
+  .card-in   { animation: cardIn   0.28s cubic-bezier(0.32,0,0.08,1) forwards; }
+
+  /* ── DONE ── */
+  #screen-done { text-align: center; }
+  #done-inner { max-width: 400px; width: 100%; }
+
+  .done-star { font-size: 3.2rem; margin-bottom: 1.5rem; display: block; animation: popIn 0.5s cubic-bezier(0.2,1.5,0.5,1) 0.1s both; }
+  @keyframes popIn { from{transform:scale(0.3);opacity:0} to{transform:scale(1);opacity:1} }
+
+  .done-headline { font-size: 3rem; font-weight: 400; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+  .done-sub { color: #888; font-size: 1rem; margin-bottom: 3rem; }
+  .done-sub strong { color: #1A1A1A; }
+
+  .done-stats { display: flex; gap: 0.75rem; margin-bottom: 3rem; }
+  .stat-card {
+    flex: 1; border-radius: 0.875rem; padding: 1rem 0.5rem; text-align: center;
+  }
+  .stat-val { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .stat-label { font-size: 0.7rem; color: #AAA; font-weight: 500; }
+
+  .done-value-box {
+    background: white; border-radius: 1rem; padding: 1.5rem;
+    margin-bottom: 2rem; text-align: left;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
+  }
+  .done-value-box p { font-size: 0.9rem; color: #666; line-height: 1.65; margin-bottom: 0.75rem; }
+  .done-value-box p:last-child { color: #1A1A1A; font-weight: 500; margin-bottom: 0; }
+  .done-value-box strong { color: #1A1A1A; }
+
+  .done-cta-col { display: flex; flex-direction: column; gap: 0.75rem; }
+  .btn-restart { color: #BBB; font-size: 0.875rem; padding: 0.5rem; transition: opacity 0.15s; }
+  .btn-restart:hover { opacity: 0.6; }
+
+  /* ── SUBMIT ── */
+  #screen-submit { justify-content: flex-start; padding-top: 2rem; }
+  #submit-inner { max-width: 480px; width: 100%; }
+
+  .submit-topbar { display: flex; align-items: center; margin-bottom: 2.5rem; }
+  .btn-back { color: #BBB; font-size: 0.85rem; margin-right: auto; transition: opacity 0.15s; }
+  .btn-back:hover { opacity: 0.6; }
+  .submit-topbar .logo { margin-bottom: 0; }
+  .submit-topbar .spacer { margin-left: auto; width: 40px; }
+
+  .submit-headline { font-size: 1.9rem; font-weight: 400; margin-bottom: 0.5rem; }
+  .submit-headline em { color: #888; }
+  .submit-sub { color: #BBB; font-size: 0.85rem; margin-bottom: 2.5rem; }
+
+  .field-group { display: flex; flex-direction: column; gap: 1.25rem; }
+  .field label {
+    font-size: 0.72rem; font-weight: 600; color: #888;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    display: block; margin-bottom: 0.5rem;
+  }
+  .field input, .field textarea {
+    width: 100%; padding: 0.875rem 1rem;
+    background: white; border: 1.5px solid #EBEBEB;
+    border-radius: 0.75rem; font-size: 0.9rem;
+    outline: none; transition: border-color 0.15s; color: #1A1A1A;
+    resize: none;
+  }
+  .field input:focus, .field textarea:focus { border-color: #1A1A1A; }
+
+  .upload-zone {
+    background: white; border: 1.5px dashed #DDDDD8;
+    border-radius: 0.75rem; padding: 1.5rem;
+    text-align: center; cursor: pointer;
+    transition: border-color 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+  .upload-zone:hover { border-color: #1A1A1A; }
+  .upload-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+  .upload-label { font-size: 0.8rem; color: #BBB; }
+
+  .btn-submit {
+    width: 100%; padding: 1rem; margin-top: 2rem;
+    background: #E8E8E8; color: #BBB;
+    border-radius: 0.75rem; font-size: 0.95rem; font-weight: 500;
+    transition: all 0.2s; pointer-events: none;
+  }
+  .btn-submit.enabled {
+    background: #1A1A1A; color: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+    pointer-events: auto; cursor: pointer;
+  }
+  .btn-submit.enabled:hover { transform: scale(1.01); }
+  .btn-submit.enabled:active { transform: scale(0.99); }
+
+  /* ── SENT SCREEN ── */
+  #screen-sent { text-align: center; }
+  .sent-check { font-size: 3rem; margin-bottom: 1.5rem; display: block; animation: popIn 0.4s cubic-bezier(0.2,1.5,0.5,1) 0.05s both; }
+  .sent-headline { font-size: 2rem; font-weight: 400; margin-bottom: 0.5rem; }
+  .sent-sub { color: #999; margin-bottom: 2rem; font-size: 0.95rem; }
+  .sent-pulse { font-size: 0.8rem; color: #BBB; animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* ── FADE UTILS ── */
+  .fade-in { animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.35s; }
+  .delay-4 { animation-delay: 0.45s; }
+  .delay-5 { animation-delay: 0.6s; }
+  .delay-6 { animation-delay: 0.75s; }
+</style>
+</head>
+<body>
+<div id="grain"></div>
+
+<!-- ══ ENTRY SCREEN ══ -->
+<div id="screen-entry" class="screen active">
+  <div id="entry-inner">
+    <span class="logo fade-in delay-1">choozy</span>
+
+    <h1 class="serif entry-headline fade-in delay-2">
+      You have <span id="entry-count">12</span> creatives<br/>
+      <em>waiting for approval.</em>
+    </h1>
+
+    <p class="entry-sub fade-in delay-3">One decision at a time.</p>
+
+    <div class="fade-in delay-4">
+      <button class="btn-primary" id="btn-start-review">Start reviewing →</button>
+      <button class="btn-ghost" id="btn-go-submit">Submit for approval</button>
+    </div>
+
+    <div class="kbd-hints fade-in" style="animation-delay:0.9s">
+      <div class="kbd-hint"><span class="kbd">←</span><span class="kbd-label">Reject</span></div>
+      <div class="kbd-hint"><span class="kbd">→</span><span class="kbd-label">Approve</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REVIEW SCREEN ══ -->
+<div id="screen-review" class="screen">
+  <div id="review-inner">
+    <div class="review-header">
+      <span class="review-counter" id="review-counter">1 of 12</span>
+      <span class="review-logo">choozy</span>
+      <div class="review-score">
+        <span class="score-approve" id="score-approve">✓ 0</span>
+        <span class="score-reject"  id="score-reject">✕ 0</span>
+      </div>
+    </div>
+
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="card-area" id="card-area">
+      <!-- Cards injected by JS -->
+    </div>
+
+    <div class="action-row">
+      <button class="btn-reject"  id="btn-reject">✕ Reject</button>
+      <button class="btn-approve" id="btn-approve">✓ Approve</button>
+    </div>
+
+    <p class="review-kbd-hint">← reject · → approve · space to advance</p>
+  </div>
+</div>
+
+<!-- ══ DONE SCREEN ══ -->
+<div id="screen-done" class="screen">
+  <div id="done-inner">
+    <span class="done-star">✦</span>
+    <h1 class="serif done-headline fade-in delay-2">You're done.</h1>
+    <p class="done-sub fade-in delay-3">You approved <strong id="done-approved">0</strong> of <strong id="done-total">12</strong> creatives.</p>
+
+    <div class="done-stats fade-in delay-4" id="done-stats">
+      <div class="stat-card" style="background:#F0FDF4">
+        <div class="stat-val" style="color:#22C55E" id="stat-approved">0</div>
+        <div class="stat-label">Approved</div>
+      </div>
+      <div class="stat-card" style="background:#FFF1F2">
+        <div class="stat-val" style="color:#EF4444" id="stat-rejected">0</div>
+        <div class="stat-label">Rejected</div>
+      </div>
+      <div class="stat-card" style="background:#F5F4F0">
+        <div class="stat-val" style="color:#1A1A1A">&lt; 2 min</div>
+        <div class="stat-label">Total time</div>
+      </div>
+    </div>
+
+    <div class="done-value-box fade-in delay-5">
+      <p>This usually takes <strong>hours of back-and-forth</strong> — long email threads, Slack pings, forgotten feedback.</p>
+      <p>With Choozy, it takes minutes. ✦</p>
+    </div>
+
+    <div class="done-cta-col fade-in delay-6">
+      <button class="btn-primary" id="btn-try-yours">Try with your creatives</button>
+      <button class="btn-restart" id="btn-restart">Start again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUBMIT SCREEN ══ -->
+<div id="screen-submit" class="screen">
+  <div id="submit-inner">
+    <div class="submit-topbar fade-in">
+      <button class="btn-back" id="btn-back">← back</button>
+      <span class="logo" style="margin-bottom:0">choozy</span>
+      <div class="spacer"></div>
+    </div>
+
+    <h2 class="serif submit-headline fade-in delay-1">Submit for<br/><em>approval</em></h2>
+    <p class="submit-sub fade-in delay-2">It'll land at the top of the queue.</p>
+
+    <div class="field-group fade-in delay-3">
+      <div class="field">
+        <label>Title *</label>
+        <input type="text" id="submit-title" placeholder="e.g. Instagram Ad – Summer Sale" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Context</label>
+        <textarea id="submit-desc" rows="3" placeholder="Add context (optional)"></textarea>
+      </div>
+      <div class="field">
+        <label>Link</label>
+        <input type="url" id="submit-url" placeholder="https://figma.com/..." />
+      </div>
+      <div class="field">
+        <label>Attachment</label>
+        <div class="upload-zone card-shadow" id="upload-zone">
+          <div id="upload-placeholder">
+            <div class="upload-icon">↑</div>
+            <div class="upload-label">Image, video, or PDF</div>
+          </div>
+          <img id="upload-preview" style="display:none;max-height:120px;max-width:100%;border-radius:0.5rem;object-fit:contain" alt="preview" />
+          <div id="upload-filename" style="display:none">
+            <div class="upload-icon">📎</div>
+            <div class="upload-label" id="upload-name"></div>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept="image/*,video/*,.pdf" style="display:none" />
+      </div>
+    </div>
+
+    <button class="btn-submit fade-in delay-4" id="btn-submit">Submit</button>
+  </div>
+</div>
+
+<!-- ══ SENT SCREEN ══ -->
+<div id="screen-sent" class="screen">
+  <span class="sent-check">✓</span>
+  <h2 class="serif sent-headline fade-in delay-1">Sent for approval</h2>
+  <p class="sent-sub fade-in delay-2">Your creative is in the queue.</p>
+  <p class="sent-pulse fade-in delay-3">Redirecting to review queue…</p>
+</div>
+
+<!-- ══ MILESTONE TOAST ══ -->
+<div id="milestone-toast">🔥 You've cleared 5 approvals</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SAMPLE_CREATIVES = [
+  { id:1,  type:"Instagram Ad",  title:"Summer Sale – Main Banner",        description:"Hero visual for the summer campaign. Bold typography on gradient background.", color:"#E8F4FD", accent:"#3B82F6", emoji:"🌊" },
+  { id:2,  type:"Video",         title:"Brand Anthem 30s Cut",              description:"Shorter edit for paid social. Ends on product close-up with CTA overlay.",    color:"#FDF4E8", accent:"#F59E0B", emoji:"🎬" },
+  { id:3,  type:"Email Header",  title:"July Newsletter – Hero Image",      description:"Clean product flatlay with seasonal color treatment.",                         color:"#F0FDF4", accent:"#22C55E", emoji:"📧" },
+  { id:4,  type:"Display Ad",    title:"Google Display – 300×250",          description:"Retargeting unit. Animated product carousel, 3 frames.",                      color:"#FDF2F8", accent:"#EC4899", emoji:"📐" },
+  { id:5,  type:"Story",         title:"Flash Sale – 24hr Countdown",       description:"Urgency-driven story format with countdown timer element.",                   color:"#FFF7ED", accent:"#EA580C", emoji:"⚡" },
+  { id:6,  type:"OOH",           title:"Billboard Concept – NYC Times Sq",  description:"Large format outdoor. Minimal. Brand logo + one sentence.",                  color:"#F5F3FF", accent:"#7C3AED", emoji:"🏙️" },
+  { id:7,  type:"TikTok Ad",     title:"UGC-Style Product Demo",            description:"15 second vertical video. Hook in first 2s. Raw aesthetic.",                 color:"#FFF1F2", accent:"#F43F5E", emoji:"📱" },
+  { id:8,  type:"Banner",        title:"Homepage Hero – Desktop",           description:"Above-the-fold hero. A/B variant B. Dark background, light text.",           color:"#F0F9FF", accent:"#0EA5E9", emoji:"🖥️" },
+  { id:9,  type:"Print",         title:"Catalog Cover – Fall Edition",      description:"Lifestyle photography. Serif headline. Clean white borders.",                color:"#FEFCE8", accent:"#CA8A04", emoji:"📖" },
+  { id:10, type:"Logo Lockup",   title:"Co-Brand Treatment – Partner X",   description:"Side-by-side logos for joint campaign. Two size variants.",                  color:"#F7FEE7", accent:"#65A30D", emoji:"🤝" },
+  { id:11, type:"Instagram Ad",  title:"Carousel – Feature Highlights",    description:"5-card carousel. Each slide covers one product feature.",                    color:"#E8F4FD", accent:"#6366F1", emoji:"🎠" },
+  { id:12, type:"Video",         title:"Testimonial Cut – 60s",             description:"Customer story. Documentary style. Subtitle overlay.",                       color:"#FDF4E8", accent:"#D97706", emoji:"🎙️" },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let state = {
+  screen: 'entry',
+  items: [...SAMPLE_CREATIVES],
+  currentIndex: 0,
+  decisions: [],
+  approvedCount: 0,
+  rejectedCount: 0,
+  milestoneShown: false,
+  submittedItem: null,
+  cardExpanded: false,
+  dragging: false,
+};
+
+// ── SCREEN SWITCHER ───────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+  });
+  const el = document.getElementById('screen-' + id);
+  el.classList.add('active');
+  // Re-trigger fade-in animations
+  el.querySelectorAll('.fade-in').forEach(el => {
+    el.style.animation = 'none';
+    el.offsetHeight; // reflow
+    el.style.animation = '';
+  });
+  state.screen = id;
+}
+
+// ── ENTRY ─────────────────────────────────────────────────────────────────────
+function initEntry() {
+  const count = state.submittedItem ? SAMPLE_CREATIVES.length + 1 : SAMPLE_CREATIVES.length;
+  document.getElementById('entry-count').textContent = count;
+}
+
+document.getElementById('btn-start-review').addEventListener('click', () => {
+  state.items = state.submittedItem
+    ? [state.submittedItem, ...SAMPLE_CREATIVES]
+    : [...SAMPLE_CREATIVES];
+  state.currentIndex = 0;
+  state.decisions = [];
+  state.approvedCount = 0;
+  state.rejectedCount = 0;
+  state.milestoneShown = false;
+  showScreen('review');
+  renderCard();
+  updateReviewHeader();
+});
+
+document.getElementById('btn-go-submit').addEventListener('click', () => {
+  showScreen('submit');
+  initSubmit();
+});
+
+// ── REVIEW ────────────────────────────────────────────────────────────────────
+function updateReviewHeader() {
+  const total = state.items.length;
+  const i = state.currentIndex;
+  document.getElementById('review-counter').textContent = `${i + 1} of ${total}`;
+  document.getElementById('score-approve').textContent  = `✓ ${state.approvedCount}`;
+  document.getElementById('score-reject').textContent   = `✕ ${state.rejectedCount}`;
+  document.getElementById('progress-fill').style.width  = `${(i / total) * 100}%`;
+}
+
+function renderCard() {
+  const area = document.getElementById('card-area');
+  area.innerHTML = '';
+
+  const items = state.items;
+  const i = state.currentIndex;
+  if (i >= items.length) return;
+
+  // Ghost cards (stack illusion)
+  if (i < items.length - 1) {
+    const g1 = document.createElement('div');
+    g1.className = 'card-stack-ghost';
+    g1.style.cssText = 'top:8px;width:92%;height:calc(100% - 8px);opacity:0.55;z-index:0;';
+    area.appendChild(g1);
+  }
+  if (i < items.length - 2) {
+    const g2 = document.createElement('div');
+    g2.className = 'card-stack-ghost';
+    g2.style.cssText = 'top:15px;width:85%;height:calc(100% - 15px);opacity:0.3;z-index:0;';
+    area.appendChild(g2);
+  }
+
+  const item = items[i];
+  const card = buildCard(item);
+  card.classList.add('card-in');
+  area.appendChild(card);
+  setupDrag(card);
+}
+
+function buildCard(item) {
+  const wrap = document.createElement('div');
+  wrap.style.position = 'relative';
+
+  // Approve stamp
+  const stampA = document.createElement('div');
+  stampA.className = 'stamp stamp-approve';
+  stampA.textContent = '✓ APPROVED';
+  wrap.appendChild(stampA);
+
+  // Reject stamp
+  const stampR = document.createElement('div');
+  stampR.className = 'stamp stamp-reject';
+  stampR.textContent = '✕ REJECTED';
+  wrap.appendChild(stampR);
+
+  // Card
+  const card = document.createElement('div');
+  card.className = 'creative-card card-shadow-lg';
+  card.dataset.id = item.id;
+
+  // Image area
+  const imgArea = document.createElement('div');
+  imgArea.className = 'card-img-area';
+  imgArea.style.background = item.color;
+
+  const emoji = document.createElement('span');
+  emoji.className = 'card-emoji';
+  emoji.textContent = item.emoji;
+
+  const badge = document.createElement('div');
+  badge.className = 'card-type-badge';
+  badge.style.color = item.accent;
+  badge.textContent = item.type;
+
+  const hint = document.createElement('div');
+  hint.className = 'card-expand-hint';
+  hint.textContent = 'tap to expand';
+
+  imgArea.appendChild(emoji);
+  imgArea.appendChild(badge);
+  imgArea.appendChild(hint);
+
+  // Body
+  const body = document.createElement('div');
+  body.className = 'card-body';
+
+  const title = document.createElement('h2');
+  title.className = 'card-title';
+  title.textContent = item.title;
+
+  const desc = document.createElement('p');
+  desc.className = 'card-desc';
+  desc.textContent = item.description;
+
+  const extra = document.createElement('div');
+  extra.className = 'card-extra';
+  extra.innerHTML = `
+    <div class="card-tags">
+      <span class="card-tag">View attachment</span>
+      <span class="card-tag">Download</span>
+    </div>
+    <p class="card-hint">Press ESC to collapse</p>
+  `;
+
+  body.appendChild(title);
+  body.appendChild(desc);
+  body.appendChild(extra);
+
+  card.appendChild(imgArea);
+  card.appendChild(body);
+  wrap.appendChild(card);
+
+  // Toggle expand on click (not drag)
+  let clickOk = true;
+  card.addEventListener('mousedown', () => { clickOk = true; });
+  card.addEventListener('mousemove', () => { clickOk = false; });
+  card.addEventListener('click', () => {
+    if (!clickOk) return;
+    state.cardExpanded = !state.cardExpanded;
+    desc.classList.toggle('expanded', state.cardExpanded);
+    extra.classList.toggle('visible', state.cardExpanded);
+    hint.style.opacity = state.cardExpanded ? '0' : '1';
+    imgArea.style.height = state.cardExpanded ? '250px' : '210px';
+  });
+
+  wrap._stampApprove = stampA;
+  wrap._stampReject  = stampR;
+
+  return wrap;
+}
+
+// ── DRAG ─────────────────────────────────────────────────────────────────────
+function setupDrag(wrap) {
+  const card = wrap.querySelector('.creative-card');
+  let startX = 0, currentX = 0, isDragging = false;
+
+  function onStart(x) {
+    startX = x; currentX = 0; isDragging = true;
+    card.style.transition = 'none';
+  }
+  function onMove(x) {
+    if (!isDragging) return;
+    currentX = x - startX;
+    const rot = currentX / 25;
+    card.style.transform = `translateX(${currentX}px) rotate(${rot}deg)`;
+
+    // Stamps
+    const aOpacity = Math.min(1, Math.max(0, (currentX - 20) / 60));
+    const rOpacity = Math.min(1, Math.max(0, (-currentX - 20) / 60));
+    wrap._stampApprove.style.opacity = aOpacity;
+    wrap._stampReject.style.opacity  = rOpacity;
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    if (currentX > 80)       decide(true);
+    else if (currentX < -80) decide(false);
+    else {
+      card.style.transition = 'transform 0.3s cubic-bezier(0.32,0,0.08,1)';
+      card.style.transform = '';
+      wrap._stampApprove.style.opacity = 0;
+      wrap._stampReject.style.opacity  = 0;
+    }
+  }
+
+  card.addEventListener('mousedown',  e => { e.preventDefault(); onStart(e.clientX); });
+  window.addEventListener('mousemove', e => { if (isDragging) onMove(e.clientX); });
+  window.addEventListener('mouseup',   () => onEnd());
+
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchmove',  e => { onMove(e.touches[0].clientX); }, { passive: true });
+  card.addEventListener('touchend',   () => onEnd());
+}
+
+function decide(approved) {
+  const area  = document.getElementById('card-area');
+  const wraps = area.querySelectorAll('[data-id]');
+  const wrap  = area.querySelector('.creative-card');
+  if (!wrap) return;
+
+  const wrapParent = wrap.parentElement;
+
+  // Animate out
+  wrap.style.transition = 'none';
+  wrap.classList.add(approved ? 'fly-right' : 'fly-left');
+
+  if (approved) state.approvedCount++;
+  else          state.rejectedCount++;
+  state.decisions.push({ id: state.items[state.currentIndex].id, approved });
+  state.currentIndex++;
+
+  setTimeout(() => {
+    if (state.currentIndex >= state.items.length) {
+      showDone();
+    } else {
+      updateReviewHeader();
+      renderCard();
+      // Milestone
+      if (state.decisions.length === 5 && !state.milestoneShown) {
+        state.milestoneShown = true;
+        showMilestone();
+      }
+    }
+  }, 290);
+}
+
+function showMilestone() {
+  const t = document.getElementById('milestone-toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('btn-approve').addEventListener('click', () => decide(true));
+document.getElementById('btn-reject').addEventListener('click',  () => decide(false));
+
+document.addEventListener('keydown', e => {
+  if (state.screen !== 'review') return;
+  if (e.key === 'ArrowRight') decide(true);
+  if (e.key === 'ArrowLeft')  decide(false);
+  if (e.key === ' ') { e.preventDefault(); decide(true); }
+  if (e.key === 'Escape') {
+    const desc  = document.querySelector('.card-desc');
+    const extra = document.querySelector('.card-extra');
+    const hint  = document.querySelector('.card-expand-hint');
+    const img   = document.querySelector('.card-img-area');
+    if (desc)  desc.classList.remove('expanded');
+    if (extra) extra.classList.remove('visible');
+    if (hint)  hint.style.opacity = '1';
+    if (img)   img.style.height = '210px';
+    state.cardExpanded = false;
+  }
+});
+
+// ── DONE ─────────────────────────────────────────────────────────────────────
+function showDone() {
+  const approved = state.approvedCount;
+  const total    = state.decisions.length;
+  const rejected = total - approved;
+
+  document.getElementById('done-approved').textContent = approved;
+  document.getElementById('done-total').textContent    = total;
+  document.getElementById('stat-approved').textContent = approved;
+  document.getElementById('stat-rejected').textContent = rejected;
+
+  showScreen('done');
+}
+
+document.getElementById('btn-try-yours').addEventListener('click', () => {
+  showScreen('submit');
+  initSubmit();
+});
+document.getElementById('btn-restart').addEventListener('click', () => {
+  state.submittedItem = null;
+  state.decisions = [];
+  state.approvedCount = 0;
+  state.rejectedCount = 0;
+  initEntry();
+  showScreen('entry');
+});
+
+// ── SUBMIT ────────────────────────────────────────────────────────────────────
+function initSubmit() {
+  document.getElementById('submit-title').value = '';
+  document.getElementById('submit-desc').value  = '';
+  document.getElementById('submit-url').value   = '';
+  document.getElementById('upload-placeholder').style.display = '';
+  document.getElementById('upload-preview').style.display     = 'none';
+  document.getElementById('upload-filename').style.display    = 'none';
+  document.getElementById('file-input').value = '';
+  updateSubmitBtn();
+  setTimeout(() => document.getElementById('submit-title').focus(), 100);
+}
+
+function updateSubmitBtn() {
+  const val = document.getElementById('submit-title').value.trim();
+  const btn = document.getElementById('btn-submit');
+  btn.classList.toggle('enabled', val.length > 0);
+}
+
+document.getElementById('submit-title').addEventListener('input', updateSubmitBtn);
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  initEntry();
+  showScreen('entry');
+});
+
+document.getElementById('upload-zone').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('upload-preview').src = ev.target.result;
+      document.getElementById('upload-preview').style.display = 'block';
+      document.getElementById('upload-placeholder').style.display = 'none';
+      document.getElementById('upload-filename').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    document.getElementById('upload-name').textContent = file.name;
+    document.getElementById('upload-filename').style.display = 'block';
+    document.getElementById('upload-placeholder').style.display = 'none';
+    document.getElementById('upload-preview').style.display = 'none';
+  }
+});
+
+document.getElementById('btn-submit').addEventListener('click', () => {
+  const title = document.getElementById('submit-title').value.trim();
+  const desc  = document.getElementById('submit-desc').value.trim();
+  if (!title) return;
+
+  state.submittedItem = {
+    id: Date.now(),
+    type: 'Your Creative',
+    title,
+    description: desc || 'Submitted for review.',
+    color: '#F0F9FF',
+    accent: '#0EA5E9',
+    emoji: '✦'
+  };
+
+  showScreen('sent');
+
+  setTimeout(() => {
+    initEntry();
+    showScreen('entry');
+  }, 2000);
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+initEntry();
+</script>
+</body>
+</html>
