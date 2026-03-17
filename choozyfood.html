@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Choozy — What should I eat?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0D0D0D;
+  --surface: #161616;
+  --surface2:#1E1E1E;
+  --border:  #2A2A2A;
+  --border2: #333;
+  --text:    #F0EDE8;
+  --text2:   #888;
+  --text3:   #555;
+  --accent:  #FF6B35;
+  --accent2: #FF8C5A;
+  --gold:    #F5C842;
+  --green:   #4ADE80;
+}
+
+html, body { background: var(--bg); color: var(--text); font-family: 'Geist', sans-serif; min-height: 100vh; }
+
+@keyframes fadeUp  { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+@keyframes shimmer { 0%,100%{opacity:.3} 50%{opacity:.7} }
+@keyframes spin    { to { transform:rotate(360deg) } }
+@keyframes slideUp { from { opacity:0; transform:translateY(40px) } to { opacity:1; transform:translateY(0) } }
+@keyframes glow    { 0%,100%{box-shadow:0 0 20px rgba(255,107,53,.15)} 50%{box-shadow:0 0 40px rgba(255,107,53,.35)} }
+@keyframes bounce2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes stepIn  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+.fade-up  { animation: fadeUp  .5s ease both }
+.fade-in  { animation: fadeIn  .4s ease both }
+.slide-up { animation: slideUp .5s cubic-bezier(.16,1,.3,1) both }
+.step-in  { animation: stepIn  .4s cubic-bezier(.16,1,.3,1) both }
+
+.serif { font-family: 'Instrument Serif', serif !important; }
+
+::-webkit-scrollbar { width:4px }
+::-webkit-scrollbar-track { background:transparent }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px }
+
+/* ── Nav ── */
+#navbar {
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: rgba(13,13,13,.88);
+  backdrop-filter: blur(16px);
+  z-index: 100;
+}
+#nav-logo { background:none; border:none; cursor:pointer; display:flex; align-items:center; gap:8px; color:var(--text); font-family:'Instrument Serif',serif; font-size:20px; letter-spacing:-.02em; }
+#nav-right { display:flex; gap:8px; align-items:center; }
+#nav-meta  { font-size:12px; color:var(--text3); }
+
+/* ── Inputs ── */
+textarea, input[type=text] {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 18px;
+  font-family: 'Geist', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  resize: none;
+  width: 100%;
+  outline: none;
+  transition: border-color .2s;
+}
+input[type=text] { border-radius: 10px; font-size: 15px; padding: 14px 18px; }
+textarea:focus, input[type=text]:focus { border-color: var(--accent); }
+textarea::placeholder, input[type=text]::placeholder { color: var(--text3); }
+
+/* ── Buttons ── */
+.btn-main {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 20px 40px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: all .2s ease;
+  letter-spacing: -.02em;
+  width: 100%;
+  display: block;
+}
+.btn-main:hover:not(:disabled) { background: var(--accent2); transform: translateY(-2px); box-shadow: 0 16px 40px rgba(255,107,53,.3); }
+.btn-main:active:not(:disabled) { transform: translateY(0); }
+.btn-main.glowing { animation: glow 2s ease infinite; }
+.btn-main:disabled { opacity:.4; cursor:not-allowed; }
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  color: var(--text2);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: all .18s;
+}
+.btn-ghost:hover { border-color:var(--text2); color:var(--text); }
+
+.btn-small {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-family: 'Geist', sans-serif;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-small:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ── Mood pills ── */
+.mood-pill {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 100px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-family: 'Geist', sans-serif;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.mood-pill:hover { border-color:var(--border2); color:var(--text); }
+.mood-pill.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── Cards ── */
+.suggestion-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px 28px;
+  transition: all .22s ease;
+  position: relative;
+  overflow: hidden;
+}
+.suggestion-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 16px 48px rgba(0,0,0,.4); }
+.suggestion-card.top-pick { border-color: var(--accent); }
+.suggestion-card.top-pick::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg,rgba(255,107,53,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+/* ── Tags ── */
+.tag { display:inline-flex; align-items:center; gap:4px; border-radius:100px; padding:3px 10px; font-size:11px; font-weight:500; }
+.tag-orange { background:rgba(255,107,53,.15); color:var(--accent2); }
+.tag-gray   { background:var(--surface2); color:var(--text2); }
+
+/* ── Context pills ── */
+.ctx-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctx-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:bounce2 2s ease infinite; flex-shrink:0; }
+
+.profile-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 100px;
+  padding: 4px 12px 4px 8px;
+  font-size: 12px;
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family:'Geist',sans-serif;
+}
+.profile-chip:hover { border-color:var(--text3); color:var(--text); }
+
+/* ── Thinking bar ── */
+.thinking-bar { height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); border-radius:2px; animation:shimmer 1.2s ease infinite; }
+
+/* ── Order buttons ── */
+.order-btn-swiggy { background:#FC8019; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12px; font-weight:600; font-family:'Geist',sans-serif; cursor:pointer; transition:all .15s; text-decoration:none; display:inline-block; }
+.order-btn-swiggy:hover { background:#e5701a; transform:translateY(-1px); }
+.order-btn-zomato { background:#E23744; color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12px; font-weight:600; font-family:'Geist',sans-serif; cursor:pointer; transition:all .15s; text-decoration:none; display:inline-block; }
+.order-btn-zomato:hover { background:#c42e3a; transform:translateY(-1px); }
+
+/* ── Modal ── */
+.modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:200; padding:24px; animation:fadeIn .2s ease; }
+.modal { background:var(--surface); border:1px solid var(--border2); border-radius:24px; padding:36px; width:100%; max-width:500px; animation:slideUp .3s cubic-bezier(.16,1,.3,1); max-height:90vh; overflow-y:auto; }
+
+/* ── Checkbox rows ── */
+.check-row { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; cursor:pointer; transition:background .15s; user-select:none; border:1.5px solid var(--border); margin-bottom:6px; }
+.check-row:hover { background:var(--surface2); }
+.check-row.selected { border-color:var(--accent); background:rgba(255,107,53,.06); }
+.check-box { width:18px; height:18px; border-radius:5px; border:1.5px solid var(--border2); background:transparent; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+.check-box.checked { background:var(--accent); border-color:var(--accent); }
+
+/* ── Screens ── */
+.screen { display:none; }
+.screen.active { display:block; }
+
+/* ── Layout ── */
+.container { max-width:540px; margin:0 auto; padding:64px 24px 80px; }
+.main-container { max-width:640px; margin:0 auto; padding:48px 24px 100px; }
+
+/* ── Step dots ── */
+.step-dots { display:flex; gap:6px; justify-content:center; margin-top:40px; }
+.step-dot { height:6px; border-radius:3px; background:var(--border2); transition:all .3s; }
+
+/* ── Onboarding grid ── */
+.diet-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:28px; }
+
+/* ── Thinking steps ── */
+.thinking-step { display:flex; align-items:center; gap:12px; animation:fadeUp .4s ease both; }
+.thinking-step .check-done { margin-left:auto; color:var(--green); font-size:12px; }
+
+/* ── Divider ── */
+hr { border:none; border-top:1px solid var(--border); }
+
+/* ── Spacer ── */
+.gap4  { gap:4px;  }
+.gap6  { gap:6px;  }
+.gap8  { gap:8px;  }
+.gap10 { gap:10px; }
+.gap12 { gap:12px; }
+.gap14 { gap:14px; }
+
+/* responsive */
+@media (max-width:480px) {
+  .diet-grid { grid-template-columns:1fr; }
+  .modal { padding:24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════ NAV ════════════════════════════════ -->
+<nav id="navbar">
+  <button id="nav-logo" onclick="handleNavLogo()">
+    <span>🍽️</span><span>Choozy</span>
+  </button>
+  <div id="nav-right"></div>
+</nav>
+
+<!-- ════════════════════════ SCREEN: ONBOARD ═══════════════════════════ -->
+<div id="screen-onboard" class="screen active">
+  <div class="container">
+
+    <!-- Step 1: Restrictions -->
+    <div id="ob-step1">
+      <p class="fade-up" style="font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px">Step 1 of 3</p>
+      <h2 class="fade-up serif" style="font-size:clamp(32px,5vw,48px);font-weight:400;line-height:1.1;margin-bottom:12px;animation-delay:.05s">
+        Any dietary<br /><em>restrictions?</em>
+      </h2>
+      <p class="fade-up" style="color:var(--text2);font-size:15px;margin-bottom:28px;animation-delay:.1s;line-height:1.6">
+        We ask once. Never again. Every suggestion will respect these.
+      </p>
+      <div class="fade-up diet-grid" id="diet-grid" style="animation-delay:.15s"></div>
+      <div class="fade-up" style="display:flex;gap:12px;animation-delay:.2s">
+        <button class="btn-main" id="ob1-next" onclick="obStep(2)" style="font-size:15px;padding:16px">Continue →</button>
+      </div>
+      <div class="step-dots">
+        <div class="step-dot" style="width:20px;background:var(--accent)"></div>
+        <div class="step-dot" style="width:6px"></div>
+        <div class="step-dot" style="width:6px"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: City -->
+    <div id="ob-step2" style="display:none">
+      <p class="step-in" style="font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px">Step 2 of 3</p>
+      <h2 class="step-in serif" style="font-size:clamp(32px,5vw,48px);font-weight:400;line-height:1.1;margin-bottom:12px;animation-delay:.05s">
+        Where are<br /><em>you ordering from?</em>
+      </h2>
+      <p class="step-in" style="color:var(--text2);font-size:15px;margin-bottom:28px;animation-delay:.1s">
+        So we can personalise suggestions for your city.
+      </p>
+      <div class="step-in" style="margin-bottom:28px;animation-delay:.15s">
+        <input type="text" id="city-input" placeholder="Mumbai, Bangalore, Delhi, Hyderabad…" style="font-size:16px;padding:18px 20px" />
+      </div>
+      <div class="step-in" style="display:flex;gap:12px;animation-delay:.2s">
+        <button class="btn-ghost" onclick="obStep(1)">← Back</button>
+        <button class="btn-main" onclick="obStep(3)" style="font-size:15px;padding:16px">Continue →</button>
+      </div>
+      <div class="step-dots">
+        <div class="step-dot" style="width:6px"></div>
+        <div class="step-dot" style="width:20px;background:var(--accent)"></div>
+        <div class="step-dot" style="width:6px"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: History -->
+    <div id="ob-step3" style="display:none">
+      <p class="step-in" style="font-size:12px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px">Step 3 of 3</p>
+      <h2 class="step-in serif" style="font-size:clamp(32px,5vw,48px);font-weight:400;line-height:1.1;margin-bottom:12px;animation-delay:.05s">
+        Paste your<br /><em>order history.</em>
+      </h2>
+      <p class="step-in" style="color:var(--text2);font-size:15px;margin-bottom:8px;animation-delay:.1s;line-height:1.6">
+        Copy from Swiggy or Zomato. More orders = smarter picks.
+      </p>
+      <button class="step-in btn-small" style="margin-bottom:16px;animation-delay:.13s" onclick="useSample()">Use sample data instead</button>
+      <div class="step-in" style="margin-bottom:24px;animation-delay:.15s">
+        <textarea id="history-input" rows="10" placeholder="Chicken Biryani - Paradise - ₹320 - Mar 14 - 9:45 PM&#10;Paneer Kathi Roll - Rolls Mania - ₹180 - Mar 12&#10;..."></textarea>
+      </div>
+      <div class="step-in" style="display:flex;gap:12px;animation-delay:.2s">
+        <button class="btn-ghost" onclick="obStep(2)">← Back</button>
+        <button class="btn-main" id="ob3-next" onclick="completeOnboard()" style="font-size:15px;padding:16px;opacity:.4" disabled>Set up Choozy →</button>
+      </div>
+      <div class="step-dots">
+        <div class="step-dot" style="width:6px"></div>
+        <div class="step-dot" style="width:6px"></div>
+        <div class="step-dot" style="width:20px;background:var(--accent)"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════ SCREEN: MAIN ══════════════════════════════ -->
+<div id="screen-main" class="screen">
+  <div class="main-container">
+
+    <!-- Context bar -->
+    <div class="fade-up" id="ctx-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:48px"></div>
+
+    <!-- Hero -->
+    <div class="fade-up" style="margin-bottom:40px;animation-delay:.06s">
+      <h1 class="serif" id="hero-title" style="font-size:clamp(38px,7vw,64px);font-weight:400;line-height:1.06;letter-spacing:-.03em;margin-bottom:10px">
+        What should<br /><em style="color:var(--text2)">you eat</em>
+      </h1>
+      <p id="hero-sub" style="font-size:15px;color:var(--text2);font-weight:300;line-height:1.6"></p>
+    </div>
+
+    <!-- Mood -->
+    <div class="fade-up" style="margin-bottom:40px;animation-delay:.12s">
+      <p style="font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">How are you feeling?</p>
+      <div id="mood-row" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <p id="mood-sub" class="fade-in" style="font-size:13px;color:var(--text2);margin-top:12px;font-style:italic;display:none"></p>
+    </div>
+
+    <!-- CTA button -->
+    <div class="fade-up" style="margin-bottom:52px;animation-delay:.18s">
+      <button class="btn-main" id="main-btn" disabled onclick="askAI()" style="font-size:clamp(16px,3vw,20px);padding:22px;border-radius:18px;letter-spacing:-.02em">
+        What should I eat now?
+      </button>
+      <p id="btn-hint" style="text-align:center;font-size:13px;color:var(--text3);margin-top:12px">Pick a mood to unlock suggestions</p>
+    </div>
+
+    <!-- Thinking -->
+    <div id="thinking-area" style="display:none"></div>
+
+    <!-- Results -->
+    <div id="results-area"></div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════ MODAL: PROFILE ═════════════════════════════ -->
+<div id="profile-modal" class="modal-backdrop" style="display:none" onclick="closeProfile(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+      <div>
+        <h3 class="serif" style="font-size:24px;font-weight:400">Dietary Profile</h3>
+        <p style="font-size:13px;color:var(--text2);margin-top:4px">Changes apply to your next suggestion.</p>
+      </div>
+      <button onclick="document.getElementById('profile-modal').style.display='none'" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px">✕</button>
+    </div>
+    <div id="profile-diet-grid" style="margin-bottom:20px"></div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:8px">City</p>
+    <input type="text" id="profile-city" placeholder="Mumbai, Bangalore…" style="margin-bottom:20px" />
+    <button class="btn-main" style="font-size:15px;padding:16px" onclick="saveProfile()">Save changes</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════ DATA ═══════════════════════════════════════
+const SAMPLE_HISTORY = `Chicken Biryani - Paradise - ₹320 - Mar 14 - 9:45 PM
+Paneer Kathi Roll - Rolls Mania - ₹180 - Mar 12 - 8:10 PM
+Veg Fried Rice - Wok Express - ₹240 - Mar 10 - 10:15 PM
+Chicken Momos - Wow Momo - ₹160 - Mar 9 - 7:20 PM
+Chicken Biryani - Paradise - ₹320 - Mar 7 - 9:30 PM
+Butter Chicken - Barbeque Nation - ₹480 - Mar 5 - 8:50 PM
+Chicken Biryani - Paradise - ₹320 - Mar 3 - 9:10 PM
+Paneer Tikka - Spice Garden - ₹350 - Mar 1 - 7:45 PM
+Veg Momos - Wow Momo - ₹140 - Feb 28 - 6:30 PM
+Dal Makhani + Roti - Punjabi Tadka - ₹290 - Feb 26 - 8:20 PM
+Chicken Biryani - Paradise - ₹320 - Feb 24 - 9:00 PM
+Masala Dosa - Saravana Bhavan - ₹180 - Feb 22 - 12:30 PM
+Pav Bhaji - Tardeo Market - ₹160 - Feb 20 - 7:00 PM
+Chicken Burger - McDonald's - ₹220 - Feb 18 - 9:45 PM
+Veg Pizza - Domino's - ₹380 - Feb 16 - 8:15 PM
+Chicken Biryani - Paradise - ₹320 - Feb 14 - 10:00 PM
+Chole Bhature - Haldiram's - ₹210 - Feb 12 - 1:00 PM
+Chicken Wrap - Subway - ₹240 - Feb 10 - 9:30 PM`;
+
+const MOODS = [
+  { id:"low",         emoji:"😴", label:"Low energy",    sub:"Something easy & familiar" },
+  { id:"happy",       emoji:"😊", label:"Happy",         sub:"I'm open to anything good"  },
+  { id:"stressed",    emoji:"😤", label:"Stressed",      sub:"Need comfort food, fast"    },
+  { id:"celebratory", emoji:"🎉", label:"Celebratory",   sub:"Make it special tonight"    },
+];
+
+const DIETARY_OPTIONS = [
+  { id:"lactose", label:"Lactose intolerant", emoji:"🥛" },
+  { id:"gluten",  label:"Gluten free",        emoji:"🌾" },
+  { id:"veg",     label:"Vegetarian",         emoji:"🥦" },
+  { id:"vegan",   label:"Vegan",              emoji:"🌱" },
+  { id:"nut",     label:"Nut allergy",        emoji:"🥜" },
+  { id:"egg",     label:"Egg allergy",        emoji:"🥚" },
+  { id:"seafood", label:"No seafood",         emoji:"🦐" },
+  { id:"spice",   label:"Low spice",          emoji:"🌶️" },
+];
+
+// ═══════════════════════════ STATE ══════════════════════════════════════
+let profile = null;  // { restrictions:[], city:'', history:'' }
+let selectedMood = null;
+let obRestrictions = [];
+let thinking = false;
+
+// ═══════════════════════════ HELPERS ════════════════════════════════════
+function getTimeContext() {
+  const h = new Date().getHours();
+  if (h >= 5  && h < 10) return { label:"Morning",    emoji:"🌅" };
+  if (h >= 10 && h < 12) return { label:"Brunch",     emoji:"☕" };
+  if (h >= 12 && h < 15) return { label:"Lunch",      emoji:"☀️"  };
+  if (h >= 15 && h < 18) return { label:"Snack time", emoji:"🍵" };
+  if (h >= 18 && h < 21) return { label:"Dinner",     emoji:"🌆" };
+  return                        { label:"Late night",  emoji:"🌙" };
+}
+
+function parseHistory(text) {
+  const lines = text.trim().split('\n').filter(Boolean);
+  const dishes = {};
+  lines.forEach(line => {
+    const parts = line.split(' - ').map(s => s.trim());
+    if (parts.length >= 2) {
+      const d = parts[0];
+      dishes[d] = (dishes[d] || 0) + 1;
+    }
+  });
+  const sorted = Object.entries(dishes).sort((a,b) => b[1]-a[1]);
+  return { total: lines.length, topDishes: sorted.slice(0,6) };
+}
+
+function saveToStorage() {
+  try { localStorage.setItem('choozy_profile', JSON.stringify(profile)); } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const s = localStorage.getItem('choozy_profile');
+    return s ? JSON.parse(s) : null;
+  } catch(e) { return null; }
+}
+
+// ═══════════════════════════ ONBOARDING ═════════════════════════════════
+function buildDietGrid(containerId, selectedArr, onToggle) {
+  const grid = document.getElementById(containerId);
+  grid.innerHTML = '';
+  DIETARY_OPTIONS.forEach(opt => {
+    const row = document.createElement('label');
+    row.className = 'check-row' + (selectedArr.includes(opt.id) ? ' selected' : '');
+    row.innerHTML = `
+      <div class="check-box ${selectedArr.includes(opt.id)?'checked':''}">
+        ${selectedArr.includes(opt.id)?'<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+      </div>
+      <span style="font-size:18px">${opt.emoji}</span>
+      <span style="font-size:13px;color:${selectedArr.includes(opt.id)?'var(--text)':'var(--text2)'}">${opt.label}</span>
+    `;
+    row.onclick = () => onToggle(opt.id);
+    grid.appendChild(row);
+  });
+}
+
+function toggleObRestriction(id) {
+  if (obRestrictions.includes(id)) obRestrictions = obRestrictions.filter(r => r !== id);
+  else obRestrictions.push(id);
+  buildDietGrid('diet-grid', obRestrictions, toggleObRestriction);
+  const btn = document.getElementById('ob1-next');
+  btn.textContent = obRestrictions.length === 0 ? 'No restrictions →' : `Save ${obRestrictions.length} & continue →`;
+}
+
+function obStep(n) {
+  document.getElementById('ob-step1').style.display = n===1?'block':'none';
+  document.getElementById('ob-step2').style.display = n===2?'block':'none';
+  document.getElementById('ob-step3').style.display = n===3?'block':'none';
+}
+
+function useSample() {
+  document.getElementById('history-input').value = SAMPLE_HISTORY;
+  checkHistoryInput();
+}
+
+function checkHistoryInput() {
+  const val = document.getElementById('history-input').value.trim();
+  const btn = document.getElementById('ob3-next');
+  btn.disabled = !val;
+  btn.style.opacity = val ? '1' : '0.4';
+}
+
+function completeOnboard() {
+  const history = document.getElementById('history-input').value.trim();
+  if (!history) return;
+  profile = {
+    restrictions: [...obRestrictions],
+    city: document.getElementById('city-input').value.trim(),
+    history
+  };
+  saveToStorage();
+  showMain();
+}
+
+// ═══════════════════════════ MAIN SCREEN ════════════════════════════════
+function showMain() {
+  document.getElementById('screen-onboard').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  renderMain();
+}
+
+function renderMain() {
+  const tc = getTimeContext();
+  const parsed = parseHistory(profile.history);
+
+  // Hero
+  document.getElementById('hero-title').innerHTML =
+    `What should<br /><em style="color:var(--text2)">you eat</em> ${tc.emoji}`;
+  document.getElementById('hero-sub').textContent =
+    `${parsed.total} orders analysed · tap your mood · get your answer.`;
+
+  // Context bar
+  const bar = document.getElementById('ctx-bar');
+  bar.innerHTML = `
+    <div class="ctx-pill"><div class="ctx-dot"></div><span>${tc.emoji} ${tc.label}</span></div>
+    ${profile.city ? `<div class="ctx-pill">📍 ${profile.city}</div>` : ''}
+    ${profile.restrictions.length > 0 ? `<div class="ctx-pill">🛡️ ${profile.restrictions.length} restriction${profile.restrictions.length>1?'s':''} active</div>` : ''}
+    <button class="profile-chip" onclick="openProfile()"><span>⚙</span><span>Edit profile</span></button>
+  `;
+
+  // Nav right
+  document.getElementById('nav-right').innerHTML = `
+    <span id="nav-meta" style="font-size:12px;color:var(--text3)">
+      ${profile.city || ''}${profile.city && profile.restrictions.length > 0 ? ' · ' : ''}${profile.restrictions.length > 0 ? profile.restrictions.length+' restrictions' : ''}
+    </span>
+    <button class="btn-ghost" style="padding:6px 14px;font-size:12px" onclick="resetApp()">Reset</button>
+  `;
+
+  // Mood row
+  const moodRow = document.getElementById('mood-row');
+  moodRow.innerHTML = '';
+  MOODS.forEach(m => {
+    const btn = document.createElement('button');
+    btn.className = 'mood-pill' + (selectedMood===m.id?' active':'');
+    btn.innerHTML = `<span>${m.emoji}</span><span>${m.label}</span>`;
+    btn.onclick = () => toggleMood(m.id);
+    moodRow.appendChild(btn);
+  });
+
+  updateMainBtn();
+}
+
+function toggleMood(id) {
+  selectedMood = selectedMood === id ? null : id;
+  // re-render mood pills
+  document.querySelectorAll('.mood-pill').forEach((btn, i) => {
+    btn.classList.toggle('active', MOODS[i].id === selectedMood);
+  });
+  const sub = document.getElementById('mood-sub');
+  if (selectedMood) {
+    const m = MOODS.find(m=>m.id===selectedMood);
+    sub.textContent = `"${m.sub}"`;
+    sub.style.display = 'block';
+  } else {
+    sub.style.display = 'none';
+  }
+  updateMainBtn();
+}
+
+function updateMainBtn() {
+  const btn = document.getElementById('main-btn');
+  const hint = document.getElementById('btn-hint');
+  if (!selectedMood || thinking) {
+    btn.disabled = true;
+    btn.classList.remove('glowing');
+    hint.style.display = 'block';
+  } else {
+    btn.disabled = false;
+    btn.classList.add('glowing');
+    hint.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════ THINKING SCREEN ════════════════════════════
+function showThinking() {
+  const tc = getTimeContext();
+  const moodObj = MOODS.find(m=>m.id===selectedMood);
+  const steps = [
+    { icon:'🕐', text:`It's ${tc.label.toLowerCase()}…` },
+    { icon:'📍', text: profile.city ? `You're in ${profile.city}` : 'Reading location context…' },
+    { icon:'😊', text:`Mood: ${moodObj?.label}` },
+    { icon:'📋', text:'Scanning your order history…' },
+    { icon:'🧠', text:'Cross-checking allergies & patterns…' },
+    { icon:'✨', text:'Finding the perfect match…' },
+  ];
+
+  const area = document.getElementById('thinking-area');
+  area.style.display = 'block';
+  area.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:28px;padding:20px 0 40px">
+      <div style="position:relative;width:64px;height:64px">
+        <div style="position:absolute;inset:0;border-radius:50%;border:2px solid var(--border2)"></div>
+        <div id="spin-ring" style="position:absolute;inset:0;border-radius:50%;border:2px solid transparent;border-top-color:var(--accent);animation:spin 1s linear infinite"></div>
+        <div id="spin-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px">${steps[0].icon}</div>
+      </div>
+      <div id="thinking-steps" style="display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px"></div>
+      <div style="width:100%;max-width:300px"><div class="thinking-bar"></div></div>
+    </div>
+  `;
+
+  let current = 0;
+  const stepsEl = document.getElementById('thinking-steps');
+  const iconEl  = document.getElementById('spin-icon');
+
+  function addStep() {
+    if (current >= steps.length) return;
+    const s = steps[current];
+    iconEl.textContent = s.icon;
+    const row = document.createElement('div');
+    row.className = 'thinking-step';
+    row.style.animationDelay = '0s';
+    row.innerHTML = `<span style="font-size:16px">${s.icon}</span><span style="font-size:14px;color:var(--text2)">${s.text}</span>`;
+    stepsEl.appendChild(row);
+
+    // Mark previous as done
+    if (current > 0) {
+      const prev = stepsEl.children[current-1];
+      if (prev) {
+        prev.querySelector('span:last-child').style.color = 'var(--text3)';
+        if (!prev.querySelector('.check-done')) {
+          const chk = document.createElement('span');
+          chk.className = 'check-done';
+          chk.textContent = '✓';
+          prev.appendChild(chk);
+        }
+      }
+    }
+    current++;
+  }
+
+  addStep();
+  const iv = setInterval(() => {
+    if (current < steps.length) addStep();
+    else clearInterval(iv);
+  }, 380);
+}
+
+// ═══════════════════════════ AI CALL ════════════════════════════════════
+async function askAI() {
+  if (!selectedMood || thinking) return;
+  thinking = true;
+  document.getElementById('results-area').innerHTML = '';
+  document.getElementById('main-btn').textContent = 'Thinking…';
+  updateMainBtn();
+  showThinking();
+
+  const tc = getTimeContext();
+  const moodObj = MOODS.find(m=>m.id===selectedMood);
+  const parsed  = parseHistory(profile.history);
+  const topDishes = parsed.topDishes.map(([d,c])=>`${d} (ordered ${c}x)`).join(', ');
+  const restrictionLabels = profile.restrictions.length
+    ? DIETARY_OPTIONS.filter(o=>profile.restrictions.includes(o.id)).map(o=>o.label).join(', ')
+    : 'none';
+
+  const now     = new Date();
+  const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  const dayStr  = now.toLocaleDateString('en-IN',{weekday:'long'});
+
+  const prompt = `You are Choozy, an AI food recommendation engine for Indian users ordering on Swiggy/Zomato.
+
+Context about this user right now:
+- Current time: ${timeStr} on ${dayStr}
+- Meal period: ${tc.label}
+- Location: ${profile.city || 'India'}
+- Mood: ${moodObj?.label} — "${moodObj?.sub}"
+- Past order history summary: ${topDishes || 'no history yet'}
+- Total orders in history: ${parsed.total}
+- Dietary restrictions / allergies: ${restrictionLabels}
+
+Your job: Suggest exactly 3 dishes to order RIGHT NOW. Each suggestion must:
+1. Respect ALL dietary restrictions strictly (if lactose intolerant, no dairy; if vegetarian, no meat; etc.)
+2. Match the mood (stressed = comfort food; celebratory = indulgent; low energy = simple; happy = anything great)
+3. Be appropriate for the time of day
+4. Align with their taste history when possible
+5. Feel like advice from a knowledgeable food-loving friend
+
+Return ONLY a valid JSON array (no markdown, no backticks, no explanation) with exactly this shape:
+[{"dish":"Dish name","restaurant":"Restaurant name","price":280,"why":"One personal reason. Max 12 words.","tags":["tag1","tag2"]}]
+
+Tag options (pick 1-2): "comfort pick","mood match","your favourite","light & easy","treat yourself","quick bite","late night staple","classic order","high protein","low spice"`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).find(b=>b.type==='text')?.text || '[]';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const suggestions = JSON.parse(clean);
+    finishThinking(suggestions);
+  } catch(e) {
+    finishThinking([
+      { dish:'Chicken Biryani', restaurant:'Paradise', price:320, why:'Your most-ordered comfort meal, perfect right now.', tags:['your favourite','comfort pick'] },
+      { dish:'Paneer Butter Masala + Garlic Naan', restaurant:'Punjab Grill', price:420, why:'Matches your usual dinner mood perfectly.', tags:['comfort pick','mood match'] },
+      { dish:'Chicken Momos', restaurant:'Wow Momo', price:160, why:'Quick, satisfying, and a proven favourite.', tags:['quick bite','classic order'] },
+    ]);
+  }
+}
+
+function finishThinking(suggestions) {
+  setTimeout(() => {
+    thinking = false;
+    document.getElementById('thinking-area').style.display = 'none';
+    document.getElementById('main-btn').textContent = 'Ask again →';
+    updateMainBtn();
+    renderResults(suggestions);
+  }, 600);
+}
+
+// ═══════════════════════════ RESULTS ════════════════════════════════════
+function renderResults(suggestions) {
+  const area = document.getElementById('results-area');
+  area.innerHTML = `
+    <p class="fade-up" style="font-size:12px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">Choozy picked these for you</p>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      ${suggestions.map((s,i) => `
+        <div class="suggestion-card ${i===0?'top-pick':''} fade-up" style="animation-delay:${i*.09}s">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+                <h3 style="font-size:18px;font-weight:600;letter-spacing:-.02em;color:var(--text)">${s.dish}</h3>
+                ${i===0?'<span class="tag tag-orange">✦ Top pick</span>':''}
+              </div>
+              <p style="font-size:13px;color:var(--text2)">${s.restaurant}<span style="margin:0 6px;color:var(--text3)">·</span><strong style="color:var(--text)">₹${s.price}</strong></p>
+            </div>
+          </div>
+          <p style="font-size:14px;color:var(--text2);font-style:italic;line-height:1.6;margin-bottom:14px">"${s.why}"</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              ${(s.tags||[]).map(t=>`<span class="tag tag-gray">${t}</span>`).join('')}
+            </div>
+            <div style="display:flex;gap:8px">
+              <a class="order-btn-swiggy" href="https://www.swiggy.com/search?query=${encodeURIComponent(s.dish)}" target="_blank" rel="noopener noreferrer">Swiggy</a>
+              <a class="order-btn-zomato" href="https://www.zomato.com/search?q=${encodeURIComponent(s.dish)}" target="_blank" rel="noopener noreferrer">Zomato</a>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    ${profile.restrictions.length > 0 ? `<p class="fade-up" style="animation-delay:.3s;font-size:12px;color:var(--text3);text-align:center;margin-top:16px">🛡️ All suggestions respect your dietary profile.</p>` : ''}
+  `;
+}
+
+// ═══════════════════════════ PROFILE MODAL ══════════════════════════════
+function openProfile() {
+  // Sync state into modal
+  buildProfileDietGrid();
+  document.getElementById('profile-city').value = profile.city || '';
+  document.getElementById('profile-modal').style.display = 'flex';
+}
+
+function buildProfileDietGrid() {
+  const grid = document.getElementById('profile-diet-grid');
+  grid.innerHTML = '';
+  DIETARY_OPTIONS.forEach(opt => {
+    const on = profile.restrictions.includes(opt.id);
+    const row = document.createElement('label');
+    row.className = 'check-row' + (on?' selected':'');
+    row.innerHTML = `
+      <div class="check-box ${on?'checked':''}">
+        ${on?'<svg width="10" height="8" viewBox="0 0 10 8"><polyline points="1,4 4,7 9,1" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
+      </div>
+      <span style="font-size:18px">${opt.emoji}</span>
+      <span style="font-size:13px;color:${on?'var(--text)':'var(--text2)'}">${opt.label}</span>
+    `;
+    row.onclick = () => {
+      if (profile.restrictions.includes(opt.id)) profile.restrictions = profile.restrictions.filter(r=>r!==opt.id);
+      else profile.restrictions.push(opt.id);
+      buildProfileDietGrid();
+    };
+    grid.appendChild(row);
+  });
+}
+
+function saveProfile() {
+  profile.city = document.getElementById('profile-city').value.trim();
+  saveToStorage();
+  document.getElementById('profile-modal').style.display = 'none';
+  renderMain(); // refresh context bar + nav
+}
+
+function closeProfile(e) {
+  if (e.target === document.getElementById('profile-modal'))
+    document.getElementById('profile-modal').style.display = 'none';
+}
+
+// ═══════════════════════════ NAV / RESET ════════════════════════════════
+function handleNavLogo() {
+  if (profile) showMain();
+  else showOnboard();
+}
+
+function showOnboard() {
+  document.getElementById('screen-main').classList.remove('active');
+  document.getElementById('screen-onboard').classList.add('active');
+  obStep(1);
+}
+
+function resetApp() {
+  profile = null;
+  selectedMood = null;
+  obRestrictions = [];
+  try { localStorage.removeItem('choozy_profile'); } catch(e) {}
+  document.getElementById('nav-right').innerHTML = '';
+  document.getElementById('results-area').innerHTML = '';
+  showOnboard();
+}
+
+// ═══════════════════════════ INIT ═══════════════════════════════════════
+function init() {
+  // Build onboarding diet grid
+  buildDietGrid('diet-grid', obRestrictions, toggleObRestriction);
+
+  // Watch history textarea
+  document.getElementById('history-input').addEventListener('input', checkHistoryInput);
+
+  // Load saved profile
+  const saved = loadFromStorage();
+  if (saved) {
+    profile = saved;
+    showMain();
+  } else {
+    obStep(1);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
